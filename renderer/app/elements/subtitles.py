@@ -103,18 +103,42 @@ class SubtitlesElement(BaseElement):
         return self._render_text(text, style, position, animation)
 
     def _resolve_position(self):
-        """Calculate x,y position from bottom/top/left/right offsets."""
+        """
+        Calculate position from named positions and/or pixel offsets.
+
+        Named positions:
+          position-y: top | center | bottom (default: bottom)
+          position-x: left | center | right (default: center)
+
+        Pixel offsets (applied ON TOP of named position):
+          top: N      → N px from top
+          bottom: N   → N px from bottom edge
+          left: N     → N px from left
+          right: N    → N px from right
+
+        If pixel offset is given without named position, it acts as the position.
+        """
         canvas_w, canvas_h = self.resolution
 
-        # Vertical: bottom or top (default: bottom 100px)
+        # ── Vertical ────────────────────────────
+        pos_y = self.data.get('position-y', None)
         use_bottom = False
         bottom_offset = 0
-        if 'top' in self.data:
+
+        if pos_y == 'top':
+            y = int(self.data.get('top', 50))  # named top + optional offset
+        elif pos_y == 'center':
+            y = 'center_y'  # special marker, resolved after clip creation
+        elif pos_y == 'bottom' or pos_y is None:
+            use_bottom = True
+            bottom_offset = int(self.data.get('bottom', 100))
+            y = None
+        elif 'top' in self.data:
             y = int(self.data['top'])
         elif 'bottom' in self.data:
             use_bottom = True
             bottom_offset = int(self.data['bottom'])
-            y = None  # will be calculated after clip creation
+            y = None
         elif 'y' in self.data:
             y = int(self.data['y'])
         else:
@@ -122,17 +146,19 @@ class SubtitlesElement(BaseElement):
             bottom_offset = 100
             y = None
 
-        # Horizontal: left, right, or center
-        align = 'center'
+        # ── Horizontal ──────────────────────────
+        pos_x = self.data.get('position-x', 'center')
+        align = pos_x if pos_x in ('left', 'center', 'right') else 'center'
         x_offset = 0
-        if 'left' in self.data:
-            align = 'left'
-            x_offset = int(self.data['left'])
-        elif 'right' in self.data:
-            align = 'right'
-            x_offset = int(self.data['right'])
+        if align == 'left':
+            x_offset = int(self.data.get('left', 20))
+        elif align == 'right':
+            x_offset = int(self.data.get('right', 20))
 
-        return {'y': y, 'align': align, 'x_offset': x_offset, 'use_bottom': use_bottom, 'bottom_offset': bottom_offset}
+        return {
+            'y': y, 'align': align, 'x_offset': x_offset,
+            'use_bottom': use_bottom, 'bottom_offset': bottom_offset,
+        }
 
     def _get_x_pos(self, clip_width, position):
         """Calculate x position based on alignment."""
@@ -145,10 +171,13 @@ class SubtitlesElement(BaseElement):
             return (canvas_w - clip_width) // 2
 
     def _get_y_pos(self, clip_height, position):
-        """Calculate y position, using actual clip height for bottom anchoring."""
+        """Calculate y position, using actual clip height for bottom/center anchoring."""
         if position['use_bottom']:
             canvas_h = self.resolution[1]
             return canvas_h - position['bottom_offset'] - clip_height
+        if position['y'] == 'center_y':
+            canvas_h = self.resolution[1]
+            return (canvas_h - clip_height) // 2
         return position['y']
 
     def _render_text(self, text, style, position, animation):

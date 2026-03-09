@@ -66,6 +66,8 @@ class CreateMovieRequest extends FormRequest
             'scenes.*.elements.*.font' => 'sometimes|string|max:200',
 
             // Subtitle positioning
+            'scenes.*.elements.*.position-x' => 'sometimes|string|in:left,center,right',
+            'scenes.*.elements.*.position-y' => 'sometimes|string|in:top,center,bottom',
             'scenes.*.elements.*.top' => 'sometimes|integer',
             'scenes.*.elements.*.bottom' => 'sometimes|integer',
             'scenes.*.elements.*.left' => 'sometimes|integer',
