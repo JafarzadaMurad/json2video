@@ -208,6 +208,7 @@ class RenderEngine:
         # Process elements
         visual_clips = [bg]
         audio_clips = []
+        element_errors = []
 
         for elem_data in elements:
             elem_type = elem_data.get('type')
@@ -245,8 +246,17 @@ class RenderEngine:
                         visual_clips.append(clip)
 
             except Exception as e:
+                error_msg = f'Scene #{index+1}, element {elem_type}: {e}'
                 logger.error(f'Failed to render {elem_type} element: {e}')
+                element_errors.append(error_msg)
                 continue
+
+        # If any elements failed, raise an error with all messages
+        if element_errors:
+            raise RuntimeError(
+                f'{len(element_errors)} element(s) failed to render: ' +
+                '; '.join(element_errors)
+            )
 
         # Compose the scene
         scene_clip = CompositeVideoClip(visual_clips, size=self.resolution)
