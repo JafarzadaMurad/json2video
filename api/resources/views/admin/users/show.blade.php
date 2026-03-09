@@ -44,6 +44,15 @@
                         <label>Phone</label>
                         <input type="text" name="phone" value="{{ $user->phone }}" placeholder="No phone">
                     </div>
+                    <div class="form-group">
+                        <label>Video Storage Days Override</label>
+                        <input type="number" name="storage_days_override" value="{{ $user->storage_days_override }}"
+                            placeholder="{{ $user->plan?->storage_days ?? 3 }} (plan default)" min="1" max="365">
+                        <small class="text-muted">
+                            Plan default: {{ $user->plan?->storage_days ?? 3 }} days.
+                            Leave empty to use plan default.
+                        </small>
+                    </div>
                     <div class="form-check">
                         <input type="checkbox" name="is_admin" value="1" id="is_admin" {{ $user->is_admin ? 'checked' : '' }}>
                         <label for="is_admin">Administrator</label>

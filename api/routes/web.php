@@ -16,6 +16,18 @@ Route::get('/', function () {
     return view('portal.landing');
 });
 
+// ─── Expired Video Page ──────────────────────
+Route::get('/video-expired/{filename}', function (string $filename) {
+    $job = \App\Models\RenderJob::where('status', 'expired')
+        ->whereRaw("output_url LIKE ?", ["%{$filename}"])
+        ->first();
+
+    return response()->view('portal.video-expired', [
+        'filename' => $filename,
+        'job' => $job,
+    ], 410); // 410 Gone
+});
+
 // ─── User Auth ────────────────────────────────
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -67,6 +79,7 @@ Route::prefix('admin')->group(function () {
 
         // Render tool
         Route::get('/render', function () {
-            return view('admin.render'); })->name('admin.render');
+            return view('admin.render');
+        })->name('admin.render');
     });
 });

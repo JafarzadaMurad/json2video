@@ -54,11 +54,13 @@ class UserController extends Controller
             'plan_id' => 'nullable|exists:plans,id',
             'plan_expires_at' => 'nullable|date',
             'phone' => 'nullable|string|max:20',
+            'storage_days_override' => 'nullable|integer|min:1|max:365',
             'is_admin' => 'sometimes|boolean',
         ]);
 
         $validated['is_admin'] = $request->boolean('is_admin');
         $validated['plan_expires_at'] = $request->input('plan_expires_at') ?: null;
+        $validated['storage_days_override'] = $request->input('storage_days_override') ?: null;
         $user->update($validated);
 
         return redirect()->back()->with('success', 'User updated successfully.');

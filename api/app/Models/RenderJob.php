@@ -85,7 +85,7 @@ class RenderJob extends Model
 
     public function markAsDone(string $outputPath, string $outputUrl, ?string $thumbnailPath, float $durationSeconds, int $fileSizeBytes): void
     {
-        $storageDays = $this->user->plan?->storage_days ?? 3;
+        $storageDays = $this->user->getStorageDays();
 
         $this->update([
             'status' => self::STATUS_DONE,

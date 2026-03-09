@@ -19,6 +19,7 @@ class User extends Authenticatable
         'password',
         'plan_id',
         'plan_expires_at',
+        'storage_days_override',
         'is_admin',
     ];
 
@@ -46,6 +47,11 @@ class User extends Authenticatable
         if (!$this->plan_expires_at)
             return null;
         return max(0, (int) now()->diffInDays($this->plan_expires_at, false));
+    }
+
+    public function getStorageDays(): int
+    {
+        return $this->storage_days_override ?? $this->plan?->storage_days ?? 3;
     }
 
     public function plan(): BelongsTo
