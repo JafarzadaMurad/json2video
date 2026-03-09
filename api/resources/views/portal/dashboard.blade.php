@@ -6,10 +6,15 @@
         <h2 style="margin-bottom: 24px; font-size: 22px;">Welcome, {{ $user->name }}! 👋</h2>
 
         @if(session('api_key'))
-            <div class="alert alert-warning" style="margin-bottom: 20px;">
-                🔑 <strong>Your API Key:</strong> <code class="mono"
-                    style="background:#1a2035; padding:4px 8px; border-radius:4px;">{{ session('api_key') }}</code>
-                <br><small class="text-muted">Save this now — it won't be shown again!</small>
+            <div class="alert alert-warning"
+                style="margin-bottom: 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div>
+                    🔑 <strong>Your API Key:</strong> <code class="mono" id="api-key-text"
+                        style="background:#1a2035; padding:4px 8px; border-radius:4px;">{{ session('api_key') }}</code>
+                    <br><small class="text-muted">Save this now — it won't be shown again!</small>
+                </div>
+                <button onclick="copyText('api-key-text')" class="btn btn-sm btn-secondary"
+                    style="white-space:nowrap; margin-left:auto;">📋 Copy</button>
             </div>
         @endif
 
@@ -91,22 +96,27 @@
                 <div class="card-body">
                     <p style="font-size:13px; color: var(--text-dim); margin-bottom: 12px;">Use your API key to render
                         videos via the REST API:</p>
-                    <pre class="mono"
-                        style="background:var(--bg); padding:14px; border-radius:8px; overflow-x:auto; font-size:11px; line-height:1.6; color: var(--accent);">curl -X POST {{ config('app.url') }}/api/v1/movies \
-              -H "X-API-Key: YOUR_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d '{
-                "resolution": "hd",
-                "scenes": [{
-                  "duration": 5,
-                  "elements": [{
-                    "type": "text",
-                    "text": "Hello World!",
-                    "font-size": 64,
-                    "color": "#ffffff"
-                  }]
-                }]
-              }'</pre>
+                    <div style="position:relative;">
+                        <button onclick="copyText('curl-code')" class="btn btn-sm btn-secondary"
+                            style="position:absolute; top:8px; right:8px; font-size:11px; padding:4px 10px; z-index:1;">📋
+                            Copy</button>
+                        <pre class="mono" id="curl-code"
+                            style="background:var(--bg); padding:14px; border-radius:8px; overflow-x:auto; font-size:11px; line-height:1.6; color: var(--accent);">curl -X POST {{ config('app.url') }}/api/v1/movies \
+                  -H "X-API-Key: YOUR_API_KEY" \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                    "resolution": "hd",
+                    "scenes": [{
+                      "duration": 5,
+                      "elements": [{
+                        "type": "text",
+                        "text": "Hello World!",
+                        "font-size": 64,
+                        "color": "#ffffff"
+                      }]
+                    }]
+                  }'</pre>
+                    </div>
                     <a href="/#docs" class="btn btn-secondary btn-sm mt-4">View full docs →</a>
                 </div>
             </div>
@@ -154,4 +164,17 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function copyText(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.innerText || el.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = original, 1500);
+            });
+        }
+    </script>
 @endsection
