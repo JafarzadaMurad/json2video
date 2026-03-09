@@ -43,6 +43,12 @@ class CreateMovieRequest extends FormRequest
             'scenes.*.elements.*.x' => 'sometimes|integer',
             'scenes.*.elements.*.y' => 'sometimes|integer',
 
+            // Video-specific
+            'scenes.*.elements.*.mute' => 'sometimes|boolean',
+            'scenes.*.elements.*.trim-start' => 'sometimes|numeric|min:0',
+            'scenes.*.elements.*.trim-end' => 'sometimes|numeric|min:0',
+            'scenes.*.elements.*.playback-rate' => 'sometimes|numeric|min:0.1|max:10',
+
             // Text elements (subtitles can use text OR src)
             'scenes.*.elements.*.text' => 'required_if:scenes.*.elements.*.type,text|nullable|string',
             'scenes.*.elements.*.font-size' => 'sometimes|integer|min:1|max:500',
@@ -52,16 +58,31 @@ class CreateMovieRequest extends FormRequest
             'scenes.*.elements.*.text-align' => 'sometimes|string|in:left,center,right',
             'scenes.*.elements.*.max-width' => 'sometimes|integer|min:1',
 
+            // Subtitle styling
+            'scenes.*.elements.*.stroke-color' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.stroke-width' => 'sometimes|integer|min:0|max:20',
+            'scenes.*.elements.*.background' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.bold' => 'sometimes|boolean',
+            'scenes.*.elements.*.font' => 'sometimes|string|max:200',
+
+            // Subtitle positioning
+            'scenes.*.elements.*.top' => 'sometimes|integer',
+            'scenes.*.elements.*.bottom' => 'sometimes|integer',
+            'scenes.*.elements.*.left' => 'sometimes|integer',
+            'scenes.*.elements.*.right' => 'sometimes|integer',
+
             // Timing & Animation
             'scenes.*.elements.*.start' => 'sometimes|numeric|min:0',
             'scenes.*.elements.*.duration' => 'sometimes|numeric|min:0.1',
             'scenes.*.elements.*.opacity' => 'sometimes|numeric|min:0|max:1',
 
-            // Animation
-            'scenes.*.elements.*.animation' => 'sometimes|array',
-            'scenes.*.elements.*.animation.type' => 'sometimes|string|in:fade-in,fade-out,slide-in-left,slide-in-right,slide-in-top,slide-in-bottom,zoom-in,zoom-out,bounce',
+            // Animation (can be string or array)
+            'scenes.*.elements.*.animation' => 'sometimes',
+            'scenes.*.elements.*.animation.type' => 'sometimes|string',
             'scenes.*.elements.*.animation.duration' => 'sometimes|numeric|min:0.1|max:5',
             'scenes.*.elements.*.animation.easing' => 'sometimes|string|in:linear,ease-in,ease-out,ease-in-out',
+            'scenes.*.elements.*.animation.fade' => 'sometimes|numeric|min:0|max:2',
+            'scenes.*.elements.*.animation.highlight-color' => 'sometimes|string|max:20',
 
             // Audio
             'scenes.*.elements.*.volume' => 'sometimes|numeric|min:0|max:1',
