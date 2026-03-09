@@ -107,6 +107,7 @@ class VideoElement(BaseElement):
             clip = clip.set_opacity(self.opacity)
 
         logger.info(f'Video element: {orig_w}x{orig_h} → {target_w}x{target_h}, '
-                     f'start={self.start}s, duration={clip.duration:.1f}s')
+                     f'start={self.start}s, duration={clip.duration:.1f}s, '
+                     f'mute={mute}, has_audio={clip.audio is not None}')
 
         return clip

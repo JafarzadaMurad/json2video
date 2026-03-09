@@ -106,15 +106,21 @@ class SubtitlesElement(BaseElement):
         """Calculate x,y position from bottom/top/left/right offsets."""
         canvas_w, canvas_h = self.resolution
 
-        # Vertical: bottom or top (default: bottom 30px)
+        # Vertical: bottom or top (default: bottom 100px)
+        use_bottom = False
+        bottom_offset = 0
         if 'top' in self.data:
             y = int(self.data['top'])
         elif 'bottom' in self.data:
-            y = canvas_h - int(self.data['bottom']) - 80  # approximate text height
+            use_bottom = True
+            bottom_offset = int(self.data['bottom'])
+            y = None  # will be calculated after clip creation
         elif 'y' in self.data:
             y = int(self.data['y'])
         else:
-            y = canvas_h - 100  # default bottom
+            use_bottom = True
+            bottom_offset = 100
+            y = None
 
         # Horizontal: left, right, or center
         align = 'center'
@@ -126,7 +132,7 @@ class SubtitlesElement(BaseElement):
             align = 'right'
             x_offset = int(self.data['right'])
 
-        return {'y': y, 'align': align, 'x_offset': x_offset}
+        return {'y': y, 'align': align, 'x_offset': x_offset, 'use_bottom': use_bottom, 'bottom_offset': bottom_offset}
 
     def _get_x_pos(self, clip_width, position):
         """Calculate x position based on alignment."""
@@ -138,12 +144,20 @@ class SubtitlesElement(BaseElement):
         else:
             return (canvas_w - clip_width) // 2
 
+    def _get_y_pos(self, clip_height, position):
+        """Calculate y position, using actual clip height for bottom anchoring."""
+        if position['use_bottom']:
+            canvas_h = self.resolution[1]
+            return canvas_h - position['bottom_offset'] - clip_height
+        return position['y']
+
     def _render_text(self, text, style, position, animation):
         """Render a single inline subtitle."""
         clip = self._make_text_clip(text, style)
 
         x_pos = self._get_x_pos(clip.w, position)
-        clip = clip.set_position((x_pos, position['y']))
+        y_pos = self._get_y_pos(clip.h, position)
+        clip = clip.set_position((x_pos, y_pos))
         clip = clip.set_duration(self.duration)
         clip = clip.set_start(self.start)
 
@@ -152,7 +166,7 @@ class SubtitlesElement(BaseElement):
 
         clip = self._apply_subtitle_animation(clip, text, style, position, animation, self.start, self.duration)
 
-        logger.info(f'Subtitles (inline): "{text[:40]}...", y={position["y"]}')
+        logger.info(f'Subtitles (inline): "{text[:40]}...", y={y_pos}')
         return clip
 
     def _render_srt(self, src, temp_dir, style, position, animation):
@@ -222,7 +236,8 @@ class SubtitlesElement(BaseElement):
         if clip is None:
             clip = self._make_text_clip(text, style)
             x_pos = self._get_x_pos(clip.w, position)
-            clip = clip.set_position((x_pos, position['y']))
+            y_pos = self._get_y_pos(clip.h, position)
+            clip = clip.set_position((x_pos, y_pos))
             clip = clip.set_start(start_time)
             clip = clip.set_duration(duration)
             if self.opacity < 1.0:
@@ -263,7 +278,7 @@ class SubtitlesElement(BaseElement):
             if word_dur <= 0:
                 continue
 
-            word_clip = word_clip.set_position((x_pos, position['y']))
+            word_clip = word_clip.set_position((x_pos, self._get_y_pos(word_clip.h, position)))
             word_clip = word_clip.set_start(word_start)
             word_clip = word_clip.set_duration(min(time_per_word, word_dur))
 
@@ -298,7 +313,7 @@ class SubtitlesElement(BaseElement):
             # and highlighted word on top
             base_clip = self._make_text_clip(text, style)
             x_pos = self._get_x_pos(base_clip.w, position)
-            base_clip = base_clip.set_position((x_pos, position['y']))
+            base_clip = base_clip.set_position((x_pos, self._get_y_pos(base_clip.h, position)))
             base_clip = base_clip.set_start(word_start)
             base_clip = base_clip.set_duration(word_dur)
 
@@ -315,7 +330,7 @@ class SubtitlesElement(BaseElement):
             highlight_clip = self._make_text_clip(text, highlight_style)
             # Mask: only show the highlighted word area
             # Simpler approach: overlay the highlighted full text briefly
-            highlight_clip = highlight_clip.set_position((x_pos, position['y']))
+            highlight_clip = highlight_clip.set_position((x_pos, self._get_y_pos(highlight_clip.h, position)))
             highlight_clip = highlight_clip.set_start(word_start)
             highlight_clip = highlight_clip.set_duration(word_dur)
 

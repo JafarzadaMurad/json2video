@@ -239,9 +239,11 @@ class RenderEngine:
                     if elem_type == 'audio':
                         audio_clips.append(clip)
                     elif elem_type == 'video':
-                        if clip.audio:
+                        # Only extract audio if not muted
+                        is_muted = elem_data.get('mute', False)
+                        if not is_muted and clip.audio:
                             audio_clips.append(clip.audio)
-                        # Strip audio from visual layer — audio is handled separately
+                        # Always strip audio from visual layer
                         visual_clips.append(clip.without_audio())
                     else:
                         visual_clips.append(clip)
