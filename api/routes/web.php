@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/plans', [UserDashboardController::class, 'plans'])->name('plans');
     Route::post('/plans/request', [UserDashboardController::class, 'requestPlan'])->name('plans.request');
+    Route::post('/api-keys', [UserDashboardController::class, 'createApiKey'])->name('api-keys.create');
+    Route::delete('/api-keys/{id}', [UserDashboardController::class, 'deleteApiKey'])->name('api-keys.delete');
 });
 
 // ─── Admin Panel ──────────────────────────────

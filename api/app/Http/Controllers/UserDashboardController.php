@@ -78,4 +78,35 @@ class UserDashboardController extends Controller
 
         return redirect()->back()->with('success', 'Plan upgrade request submitted! We will contact you soon.');
     }
+
+    public function createApiKey(Request $request)
+    {
+        $request->validate([
+            'label' => 'nullable|string|max:100',
+        ]);
+
+        $rawKey = 'j2v_' . bin2hex(random_bytes(24));
+        $prefix = substr($rawKey, 0, 8);
+
+        \App\Models\ApiKey::create([
+            'user_id' => auth()->id(),
+            'key_hash' => hash('sha256', $rawKey),
+            'key_prefix' => $prefix,
+            'label' => $request->input('label', 'API Key'),
+            'is_active' => true,
+        ]);
+
+        return redirect()->back()->with('new_api_key', $rawKey);
+    }
+
+    public function deleteApiKey(int $id)
+    {
+        $key = \App\Models\ApiKey::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $key->delete();
+
+        return redirect()->back()->with('success', 'API key deleted.');
+    }
 }

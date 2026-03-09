@@ -6,15 +6,27 @@
         <h2 style="margin-bottom: 24px; font-size: 22px;">Welcome, {{ $user->name }}! 👋</h2>
 
         @if(session('api_key'))
-            <div class="alert alert-warning"
-                style="margin-bottom: 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div class="alert alert-warning" style="margin-bottom: 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div>
                     🔑 <strong>Your API Key:</strong> <code class="mono" id="api-key-text"
                         style="background:#1a2035; padding:4px 8px; border-radius:4px;">{{ session('api_key') }}</code>
                     <br><small class="text-muted">Save this now — it won't be shown again!</small>
                 </div>
-                <button onclick="copyText('api-key-text')" class="btn btn-sm btn-secondary"
-                    style="white-space:nowrap; margin-left:auto;">📋 Copy</button>
+                <button onclick="copyRaw(document.getElementById('api-key-text').textContent)" class="btn btn-sm btn-secondary" style="white-space:nowrap; margin-left:auto;">📋 Copy</button>
+            </div>
+        @endif
+
+        @if(session('new_api_key'))
+            <div class="alert alert-warning" style="margin-bottom: 20px;">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div>
+                        🔑 <strong>New API Key:</strong>
+                        <code class="mono" id="new-key-text"
+                            style="background:#1a2035; padding:4px 8px; border-radius:4px; word-break:break-all;">{{ session('new_api_key') }}</code>
+                    </div>
+                    <button onclick="copyRaw(document.getElementById('new-key-text').textContent)" class="btn btn-sm btn-secondary" style="white-space:nowrap; margin-left:auto;">📋 Copy Key</button>
+                </div>
+                <small class="text-muted" style="display:block; margin-top:8px;">⚠️ Save this key now! It won't be shown again.</small>
             </div>
         @endif
 
@@ -23,28 +35,30 @@
                 <div class="label">Current Plan</div>
                 <div class="value">{{ $user->plan?->name ?? 'None' }}</div>
                 @if($user->plan_expires_at)
-                    <div class="sub" style="color: {{ $user->daysUntilExpiry() <= 3 ? 'var(--red)' : 'var(--text-dim)' }}">
-                        ⏳ {{ $user->daysUntilExpiry() }} days left ({{ $user->plan_expires_at->format('M j, Y') }})
-                    </div>
-                @elseif($user->plan?->slug === 'free')
-                    <div class="sub">♾️ No expiration</div>
+                    @if($user->daysUntilExpiry() <= 3)
+                        <small style="color:#f87171;">⏳ {{ $user->daysUntilExpiry() }} days left</small>
+                    @else
+                        <small class="text-muted">⏳ {{ $user->daysUntilExpiry() }} days left</small>
+                    @endif
+                @else
+                    <small class="text-muted">∞ No expiration</small>
                 @endif
-                <div class="sub"><a href="/plans" style="font-size:12px">View all plans →</a></div>
+                <a href="/plans" style="font-size:12px; color: var(--accent);">View all plans →</a>
             </div>
             <div class="stat-card">
                 <div class="label">Render Usage</div>
                 <div class="value">{{ number_format($totalRenderMinutes, 1) }} min</div>
-                <div class="sub">of {{ $user->plan?->max_render_minutes ?? '∞' }} min limit</div>
+                <small class="text-muted">of {{ $user->plan?->max_render_minutes ?? 10 }} min limit</small>
             </div>
             <div class="stat-card">
                 <div class="label">Max Duration</div>
-                <div class="value">{{ $user->plan?->max_video_duration ?? '—' }}s</div>
-                <div class="sub">per video</div>
+                <div class="value">{{ $user->plan?->max_video_duration ?? 180 }}s</div>
+                <small class="text-muted">per video</small>
             </div>
             <div class="stat-card">
                 <div class="label">Resolution</div>
-                <div class="value" style="font-size: 22px;">{{ $user->plan?->max_resolution ?? '—' }}</div>
-                <div class="sub">max quality</div>
+                <div class="value">{{ $user->plan?->max_resolution ?? 'hd' }}</div>
+                <small class="text-muted">max quality</small>
             </div>
         </div>
 
@@ -56,8 +70,13 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <!-- API Keys -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                     <h3>API Keys</h3>
+                    <form method="POST" action="/api-keys" style="display:flex; gap:6px; align-items:center;">
+                        @csrf
+                        <input type="text" name="label" placeholder="Key label" style="padding:4px 8px; font-size:12px; width:100px; background:var(--bg); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+                        <button type="submit" class="btn btn-sm btn-primary" style="padding:4px 10px; font-size:11px;">+ New Key</button>
+                    </form>
                 </div>
                 <div class="card-body" style="padding:0">
                     <table>
@@ -66,7 +85,7 @@
                                 <th>Prefix</th>
                                 <th>Label</th>
                                 <th>Status</th>
-                                <th>Created</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -74,13 +93,17 @@
                                 <tr>
                                     <td class="mono">{{ $key->key_prefix }}...</td>
                                     <td>{{ $key->label }}</td>
-                                    <td>{!! $key->is_active ? '<span class="badge badge-done">Active</span>' : '<span class="text-muted">Inactive</span>' !!}
+                                    <td>{!! $key->is_active ? '<span class="badge badge-done">Active</span>' : '<span class="text-muted">Inactive</span>' !!}</td>
+                                    <td>
+                                        <form method="POST" action="/api-keys/{{ $key->id }}" style="display:inline;" onsubmit="return confirm('Delete this API key?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" style="background:none; border:none; color:#f87171; cursor:pointer; font-size:12px;">🗑️</button>
+                                        </form>
                                     </td>
-                                    <td class="text-sm text-muted">{{ $key->created_at->format('M j, Y') }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-muted">No API keys</td>
+                                    <td colspan="4" class="text-muted">No API keys — create one above</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -166,15 +189,34 @@
     </div>
 
     <script>
-        function copyText(elementId) {
-            const el = document.getElementById(elementId);
-            const text = el.innerText || el.textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = event.target;
-                const original = btn.textContent;
-                btn.textContent = '✅ Copied!';
-                setTimeout(() => btn.textContent = original, 1500);
-            });
+    function copyText(elementId) {
+        const el = document.getElementById(elementId);
+        const text = el.innerText || el.textContent;
+        copyRaw(text);
+    }
+
+    function copyRaw(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => showCopied());
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopied();
         }
+    }
+
+    function showCopied() {
+        const btn = event.target.closest('button');
+        if (!btn) return;
+        const original = btn.innerHTML;
+        btn.innerHTML = '✅';
+        setTimeout(() => btn.innerHTML = original, 1500);
+    }
     </script>
 @endsection
