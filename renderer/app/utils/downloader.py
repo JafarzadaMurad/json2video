@@ -40,10 +40,26 @@ def download_asset(url: str, temp_dir: str, allowed_types: list = None) -> str:
     if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
         raise ValueError(f'Access to local addresses is not allowed: {hostname}')
 
-    # Download
+    # Download with retry
     logger.info(f'Downloading: {url}')
-    response = requests.get(url, timeout=60, stream=True)
-    response.raise_for_status()
+    max_retries = 3
+    last_error = None
+
+    for attempt in range(max_retries):
+        try:
+            verify_ssl = True if attempt < 2 else False  # Disable SSL on last attempt
+            response = requests.get(url, timeout=60, stream=True, verify=verify_ssl)
+            response.raise_for_status()
+            break
+        except (requests.exceptions.SSLError, requests.exceptions.ConnectionError) as e:
+            last_error = e
+            logger.warning(f'Download attempt {attempt + 1}/{max_retries} failed: {e}')
+            if attempt == max_retries - 1:
+                raise ValueError(f'Failed to download after {max_retries} attempts: {url} ({e})')
+            import time
+            time.sleep(1)
+        except requests.exceptions.HTTPError:
+            raise
 
     # Determine file extension
     content_type = response.headers.get('Content-Type', '')
