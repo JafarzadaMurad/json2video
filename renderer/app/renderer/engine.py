@@ -241,7 +241,8 @@ class RenderEngine:
                     elif elem_type == 'video':
                         if clip.audio:
                             audio_clips.append(clip.audio)
-                        visual_clips.append(clip)
+                        # Strip audio from visual layer — audio is handled separately
+                        visual_clips.append(clip.without_audio())
                     else:
                         visual_clips.append(clip)
 
