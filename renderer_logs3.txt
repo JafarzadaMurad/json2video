@@ -1,0 +1,22 @@
+﻿renderer-1  | 2026-03-05 06:19:57 [INFO] worker: 🚀 JSON2Video Render Worker starting (ID: 85c2a8bb55b3)
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker:    Redis: redis:6379
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker:    MySQL: mysql:3306/json2video
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker:    Storage: /app/storage/renders
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-05 06:19:57 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+renderer-1  | 2026-03-05 06:28:17 [INFO] worker: Processing job: 019cbcae-c9a8-72a3-8f98-dc810e4fe81a
+renderer-1  | 2026-03-05 06:28:17 [INFO] engine: Starting render: 019cbcae-c9a8-72a3-8f98-dc810e4fe81a (1280x720, quality=medium, scenes=1)
+renderer-1  | 2026-03-05 06:28:17 [INFO] engine: Rendering scene: "Test scene" (duration=3s, elements=1)
+renderer-1  | 2026-03-05 06:28:17 [ERROR] engine: Failed to render text element: MoviePy Error: creation of None failed because of the following error:
+renderer-1  | 
+renderer-1  | convert: attempt to perform an operation not allowed by the security policy `@/tmp/tmp597_ivrg.txt' @ error/string.c/FileToString/989.
+renderer-1  | .
+renderer-1  | 
+renderer-1  | .This error can be due to the fact that ImageMagick is not installed on your computer, or (for Windows users) that you didn't specify the path to the ImageMagick binary in file conf.py, or that the path you specified is incorrect
+renderer-1  | 2026-03-05 06:28:17 [INFO] engine: Scene 1/1 rendered
+renderer-1  | 2026-03-05 06:28:17 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 06:28:17 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbcae-c9a8-72a3-8f98-dc810e4fe81a.mp4
+renderer-1  | 2026-03-05 06:28:19 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbcae-c9a8-72a3-8f98-dc810e4fe81a_thumb.jpg
+renderer-1  | 2026-03-05 06:28:19 [INFO] engine: Render complete: 3.0s video, 0.0 MB, took 2.1s
+renderer-1  | 2026-03-05 06:28:19 [INFO] worker: Job 019cbcae-c9a8-72a3-8f98-dc810e4fe81a completed successfully. Output: http://localhost:8000/renders/videos/019cbcae-c9a8-72a3-8f98-dc810e4fe81a.mp4

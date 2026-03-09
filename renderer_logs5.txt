@@ -1,0 +1,30 @@
+﻿renderer-1  | 2026-03-05 12:04:10 [ERROR] engine: Failed to render image element: module 'PIL.Image' has no attribute 'ANTIALIAS'
+renderer-1  | 2026-03-05 12:04:10 [INFO] element.text: Text element: "JSON2Video Platform...", size=72, start=0s, duration=4s
+renderer-1  | 2026-03-05 12:04:10 [INFO] element.text: Text element: "Videolari JSON il? yarat!...", size=36, start=0s, duration=4s
+renderer-1  | 2026-03-05 12:04:10 [INFO] engine: Scene 1/3 rendered
+renderer-1  | 2026-03-05 12:04:10 [INFO] engine: Rendering scene: "Feature scene" (duration=3s, elements=2)
+renderer-1  | 2026-03-05 12:04:10 [INFO] element.text: Text element: "Image + Text + Audio...", size=56, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:04:10 [INFO] element.text: Text element: "Powered by FFmpeg & MoviePy...", size=28, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:04:10 [INFO] engine: Scene 2/3 rendered
+renderer-1  | 2026-03-05 12:04:10 [INFO] engine: Rendering scene: "Outro" (duration=3s, elements=2)
+renderer-1  | 2026-03-05 12:04:10 [ERROR] engine: Failed to render image element: module 'PIL.Image' has no attribute 'ANTIALIAS'
+renderer-1  | 2026-03-05 12:04:11 [INFO] element.text: Text element: "json2video.com...", size=64, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:04:11 [INFO] engine: Scene 3/3 rendered
+renderer-1  | 2026-03-05 12:04:11 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 12:04:11 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbde2-47fa-7083-9655-bd0b89d8dabc.mp4
+renderer-1  | 2026-03-05 12:04:34 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbde2-47fa-7083-9655-bd0b89d8dabc_thumb.jpg
+renderer-1  | 2026-03-05 12:04:34 [INFO] engine: Render complete: 10.0s video, 0.1 MB, took 25.1s
+renderer-1  | 2026-03-05 12:04:34 [ERROR] worker: Job 019cbde2-47fa-7083-9655-bd0b89d8dabc failed: Python type numpy.int64 cannot be converted
+renderer-1  | Traceback (most recent call last):
+renderer-1  |   File "/app/app/worker.py", line 99, in process_job
+renderer-1  |     update_job_status(
+renderer-1  |   File "/app/app/worker.py", line 68, in update_job_status
+renderer-1  |     cursor.execute(query, values)
+renderer-1  |   File "/usr/local/lib/python3.11/site-packages/mysql/connector/cursor_cext.py", line 361, in execute
+renderer-1  |     prepared = self._cnx.prepare_for_mysql(params)
+renderer-1  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+renderer-1  |   File "/usr/local/lib/python3.11/site-packages/mysql/connector/connection_cext.py", line 830, in prepare_for_mysql
+renderer-1  |     result = self._cmysql.convert_to_mysql(*params)
+renderer-1  |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+renderer-1  | _mysql_connector.MySQLInterfaceError: Python type numpy.int64 cannot be converted
+renderer-1  | 

@@ -1,0 +1,20 @@
+﻿api-1  | [05-Mar-2026 11:41:52] NOTICE: fpm is running, pid 1
+api-1  | [05-Mar-2026 11:41:52] NOTICE: ready to handle connections
+api-1  | 172.18.0.6 -  05/Mar/2026:11:42:06 +0000 "POST /index.php" 202
+api-1  | 172.18.0.6 -  05/Mar/2026:11:46:35 +0000 "POST /index.php" 202
+api-1  | 172.18.0.6 -  05/Mar/2026:11:47:00 +0000 "GET /index.php" 200
+api-1  | 172.18.0.6 -  05/Mar/2026:12:03:56 +0000 "POST /index.php" 202
+api-1  | 172.18.0.6 -  05/Mar/2026:12:04:30 +0000 "GET /index.php" 200
+api-1  | 172.18.0.6 -  05/Mar/2026:12:06:36 +0000 "POST /index.php" 202
+api-1  | 172.18.0.6 -  05/Mar/2026:12:07:19 +0000 "GET /index.php" 200
+api-1  | 172.18.0.6 -  05/Mar/2026:20:35:42 +0000 "POST /index.php" 202
+api-1  | 172.18.0.6 -  05/Mar/2026:20:36:11 +0000 "GET /index.php" 200
+api-1  | 172.18.0.6 -  06/Mar/2026:07:21:13 +0000 "GET /index.php" 500
+api-1  | 172.18.0.6 -  06/Mar/2026:07:21:51 +0000 "GET /index.php" 500
+api-1  | 172.18.0.6 -  06/Mar/2026:07:22:15 +0000 "GET /index.php" 500
+api-1  | 172.18.0.6 -  06/Mar/2026:08:30:59 +0000 "GET /index.php" 500
+api-1  | [06-Mar-2026 08:47:19] NOTICE: Finishing ...
+api-1  | [06-Mar-2026 08:47:19] NOTICE: exiting, bye-bye!
+api-1  | [06-Mar-2026 08:47:20] NOTICE: fpm is running, pid 1
+api-1  | [06-Mar-2026 08:47:20] NOTICE: ready to handle connections
+api-1  | 172.18.0.7 -  06/Mar/2026:08:47:25 +0000 "GET /index.php" 500

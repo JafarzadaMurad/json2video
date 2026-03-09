@@ -1,0 +1,3 @@
+# Render storage — git should track the directory structure but not the files
+*
+!.gitkeep

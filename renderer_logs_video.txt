@@ -1,0 +1,7 @@
+﻿renderer-1  | 2026-03-06 19:59:01 [INFO] worker: 🚀 JSON2Video Render Worker starting (ID: e6f44e1241c2)
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker:    Redis: redis:6379
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker:    MySQL: mysql:3306/json2video
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker:    Storage: /app/storage/renders
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-06 19:59:01 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs

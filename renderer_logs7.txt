@@ -1,0 +1,29 @@
+﻿renderer-1  | 2026-03-05 20:29:28 [INFO] worker: 🚀 JSON2Video Render Worker starting (ID: bbbaa6713d7e)
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker:    Redis: redis:6379
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker:    MySQL: mysql:3306/json2video
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker:    Storage: /app/storage/renders
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-05 20:29:28 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+renderer-1  | 2026-03-05 20:35:46 [INFO] worker: Processing job: 019cbfb6-ad36-7023-ac6b-5f4688ef4d1e
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Starting render: 019cbfb6-ad36-7023-ac6b-5f4688ef4d1e (1080x1920, quality=high, fps=30, scenes=3)
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Rendering scene: "Intro - Dark Blue BG" (duration=4s, elements=2)
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "JSON2VIDEO...", size=96, start=0s, duration=4s
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "Video Generator API...", size=42, start=0s, duration=4s
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Scene 1/3 rendered
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Rendering scene: "Features - with transition" (duration=3s, elements=3)
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "Custom Resolution...", size=64, start=0s, duration=3s
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "1080x1920 Vertical Video...", size=48, start=0s, duration=3s
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "Transitions & Animations...", size=42, start=0s, duration=3s
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Scene 2/3 rendered
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Rendering scene: "Outro" (duration=3s, elements=1)
+renderer-1  | 2026-03-05 20:35:46 [INFO] element.text: Text element: "json2video.com...", size=72, start=0s, duration=3s
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Scene 3/3 rendered
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Applying transitions...
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Transition: fade (0.5s)
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Transition: fade (0.8s)
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 20:35:46 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbfb6-ad36-7023-ac6b-5f4688ef4d1e.mp4
+renderer-1  | 2026-03-05 20:36:40 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbfb6-ad36-7023-ac6b-5f4688ef4d1e_thumb.jpg
+renderer-1  | 2026-03-05 20:36:40 [INFO] engine: Render complete: 10.0s video, 0.3 MB, took 54.7s
+renderer-1  | 2026-03-05 20:36:40 [INFO] worker: Job 019cbfb6-ad36-7023-ac6b-5f4688ef4d1e completed successfully. Output: http://localhost:8000/renders/videos/019cbfb6-ad36-7023-ac6b-5f4688ef4d1e.mp4

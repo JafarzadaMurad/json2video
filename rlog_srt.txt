@@ -1,0 +1,30 @@
+﻿2026-03-06 22:05:15 [INFO] worker: 🚀 JSON2Video Render Worker starting (ID: b4e25302cb60)
+2026-03-06 22:05:15 [INFO] worker:    Redis: redis:6379
+2026-03-06 22:05:15 [INFO] worker:    MySQL: mysql:3306/json2video
+2026-03-06 22:05:15 [INFO] worker:    Storage: /app/storage/renders
+2026-03-06 22:05:15 [INFO] worker: Connected to Redis ✅
+2026-03-06 22:05:15 [INFO] worker: Connected to MySQL ✅
+2026-03-06 22:05:15 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+2026-03-06 22:05:28 [INFO] worker: Processing job: 019cc52f-2b39-718d-9fe2-ba25c12fe368
+2026-03-06 22:05:28 [INFO] engine: Starting render: 019cc52f-2b39-718d-9fe2-ba25c12fe368 (1080x1920, quality=high, fps=30, scenes=1)
+2026-03-06 22:05:28 [INFO] engine: Rendering scene: "Full video" (duration=20s, elements=3)
+2026-03-06 22:05:28 [INFO] downloader: Downloading: http://nginx:80/media/Introducing%20the%20A-Frame%20Cabin%20%20Delivered%20Fully%20Finished%20Nationwide.mp4
+2026-03-06 22:05:28 [INFO] downloader: Downloaded: e37129f74a27169f2515806be6d72f17.mp4 (4368.6 KB)
+2026-03-06 22:05:29 [INFO] element.video: Video element: 640x360 → 1080x607, start=0s, duration=10.0s
+2026-03-06 22:05:29 [INFO] downloader: Downloading: http://nginx:80/media/Tiny%20House%20Tour%20%20Minimalist%20Decor%20%26%20Peaceful%20Nature%20Views.mp4
+2026-03-06 22:05:29 [INFO] downloader: Downloaded: f952a1347404bd25b6d19f9c0415b93b.mp4 (1458.5 KB)
+2026-03-06 22:05:29 [INFO] element.video: Video element: 360x630 → 1080x1890, start=10s, duration=10.0s
+2026-03-06 22:05:29 [INFO] element.subtitles: Subtitles from SRT: http://nginx:80/media/subtitles.srt
+2026-03-06 22:05:29 [INFO] downloader: Downloading: http://nginx:80/media/subtitles.srt
+2026-03-06 22:05:29 [INFO] downloader: Downloaded: ce4cb82fe627964f67a4a66804f5130a.bin (0.3 KB)
+2026-03-06 22:05:29 [INFO] element.subtitles: Parsed 4 subtitle entries from SRT
+2026-03-06 22:05:29 [INFO] element.subtitles:   Sub #1: "Salam! Bu qısa bir test subtit..." 0.0s-2.5s
+2026-03-06 22:05:29 [INFO] element.subtitles:   Sub #2: "Bu fayl Azərbaycan dilində haz..." 2.5s-5.0s
+2026-03-06 22:05:29 [INFO] element.subtitles:   Sub #3: "Subtitr videonun içində görünə..." 5.0s-7.5s
+2026-03-06 22:05:29 [INFO] element.subtitles:   Sub #4: "İzlədiyiniz üçün təşəkkürlər!..." 7.5s-10.0s
+2026-03-06 22:05:29 [INFO] engine: Scene 1/1 rendered
+2026-03-06 22:05:29 [INFO] engine: Concatenating scenes...
+2026-03-06 22:05:29 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cc52f-2b39-718d-9fe2-ba25c12fe368.mp4
+2026-03-06 22:06:11 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cc52f-2b39-718d-9fe2-ba25c12fe368_thumb.jpg
+2026-03-06 22:06:11 [INFO] engine: Render complete: 20.0s video, 19.7 MB, took 42.3s
+2026-03-06 22:06:11 [INFO] worker: Job 019cc52f-2b39-718d-9fe2-ba25c12fe368 completed successfully. Output: http://localhost:8000/renders/videos/019cc52f-2b39-718d-9fe2-ba25c12fe368.mp4

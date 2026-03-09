@@ -1,0 +1,20 @@
+﻿2026-03-06 20:26:59 [INFO] worker: Job 019cc4d4-9e9a-7015-88d7-2bb95e8c50b1 completed successfully. Output: http://localhost:8000/renders/videos/019cc4d4-9e9a-7015-88d7-2bb95e8c50b1.mp4
+2026-03-06 21:56:24 [INFO] worker: Processing job: 019cc526-dc7a-71b1-912a-02a1fa59fb9f
+2026-03-06 21:56:24 [INFO] engine: Starting render: 019cc526-dc7a-71b1-912a-02a1fa59fb9f (1080x1920, quality=high, fps=30, scenes=1)
+2026-03-06 21:56:24 [INFO] engine: Rendering scene: "Full video" (duration=20s, elements=3)
+2026-03-06 21:56:24 [INFO] downloader: Downloading: http://nginx:80/media/Introducing%20the%20A-Frame%20Cabin%20%20Delivered%20Fully%20Finished%20Nationwide.mp4
+2026-03-06 21:56:24 [INFO] downloader: Downloaded: e37129f74a27169f2515806be6d72f17.mp4 (4368.6 KB)
+2026-03-06 21:56:24 [INFO] element.video: Video element: 1080x1920, start=0s, duration=10.0s
+2026-03-06 21:56:24 [INFO] downloader: Downloading: http://nginx:80/media/Tiny%20House%20Tour%20%20Minimalist%20Decor%20%26%20Peaceful%20Nature%20Views.mp4
+2026-03-06 21:56:24 [INFO] downloader: Downloaded: f952a1347404bd25b6d19f9c0415b93b.mp4 (1458.5 KB)
+2026-03-06 21:56:25 [INFO] element.video: Video element: 1080x1920, start=10s, duration=10.0s
+2026-03-06 21:56:25 [INFO] element.subtitles: Subtitles from file: http://nginx:80/media/subtitles.srt (basic support)
+2026-03-06 21:56:25 [INFO] downloader: Downloading: http://nginx:80/media/subtitles.srt
+2026-03-06 21:56:25 [INFO] downloader: Downloaded: ce4cb82fe627964f67a4a66804f5130a.bin (0.3 KB)
+2026-03-06 21:56:25 [INFO] element.subtitles: Subtitles: "Salam! Bu qısa bir test subtitridir. Bu ...", y=1820, size=32
+2026-03-06 21:56:25 [INFO] engine: Scene 1/1 rendered
+2026-03-06 21:56:25 [INFO] engine: Concatenating scenes...
+2026-03-06 21:56:25 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cc526-dc7a-71b1-912a-02a1fa59fb9f.mp4
+2026-03-06 21:57:09 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cc526-dc7a-71b1-912a-02a1fa59fb9f_thumb.jpg
+2026-03-06 21:57:09 [INFO] engine: Render complete: 20.0s video, 25.4 MB, took 45.2s
+2026-03-06 21:57:09 [INFO] worker: Job 019cc526-dc7a-71b1-912a-02a1fa59fb9f completed successfully. Output: http://localhost:8000/renders/videos/019cc526-dc7a-71b1-912a-02a1fa59fb9f.mp4

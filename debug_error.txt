@@ -1,0 +1,92 @@
+﻿{
+    "message": "The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: The stream or file \"/var/www/html/storage/logs/laravel.log\" could not be opened in append mode: Failed to open stream: Permission denied\nThe exception occurred while attempting to log: Usage log failed: SQLSTATE[HY000]: General error: 1364 Field 'job_id' doesn't have a default value (Connection: mysql, Host: mysql, Port: 3306, Database: json2video, SQL: insert into `usage_logs` (`user_id`, `api_key_id`, `endpoint`, `method`, `status_code`, `ip_address`, `user_agent`, `updated_at`, `created_at`) values (1, ?, api/v1/account, GET, 200, 172.18.0.6, curl/8.14.1, 2026-03-06 13:29:06, 2026-03-06 13:29:06))\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}\nContext: {\"exception\":{}}",
+    "exception": "UnexpectedValueException",
+    "file": "/var/www/html/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php",
+    "line": 164,
+    "trace": [
+        {
+            "file": "/var/www/html/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php",
+            "line": 44,
+            "function": "write",
+            "class": "Monolog\\Handler\\StreamHandler",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/monolog/monolog/src/Monolog/Logger.php",
+            "line": 391,
+            "function": "handle",
+            "class": "Monolog\\Handler\\AbstractProcessingHandler",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/monolog/monolog/src/Monolog/Logger.php",
+            "line": 646,
+            "function": "addRecord",
+            "class": "Monolog\\Logger",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Log/Logger.php",
+            "line": 187,
+            "function": "error",
+            "class": "Monolog\\Logger",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Log/Logger.php",
+            "line": 96,
+            "function": "writeLog",
+            "class": "Illuminate\\Log\\Logger",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Log/LogManager.php",
+            "line": 703,
+            "function": "error",
+            "class": "Illuminate\\Log\\Logger",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php",
+            "line": 402,
+            "function": "error",
+            "class": "Illuminate\\Log\\LogManager",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php",
+            "line": 365,
+            "function": "reportThrowable",
+            "class": "Illuminate\\Foundation\\Exceptions\\Handler",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php",
+            "line": 562,
+            "function": "report",
+            "class": "Illuminate\\Foundation\\Exceptions\\Handler",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php",
+            "line": 146,
+            "function": "reportException",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/Application.php",
+            "line": 1220,
+            "function": "handle",
+            "class": "Illuminate\\Foundation\\Http\\Kernel",
+            "type": "->"
+        },
+        {
+            "file": "/var/www/html/public/index.php",
+            "line": 20,
+            "function": "handleRequest",
+            "class": "Illuminate\\Foundation\\Application",
+            "type": "->"
+        }
+    ]
+}

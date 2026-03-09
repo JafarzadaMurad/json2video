@@ -1,0 +1,7 @@
+﻿renderer-1  | 2026-03-04 20:41:46 [INFO] worker: 🚀 JSON2Video Render Worker starting (ID: 84f5b3c93c47)
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker:    Redis: redis:6379
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker:    MySQL: mysql:3306/json2video
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker:    Storage: /app/storage/renders
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-04 20:41:46 [INFO] worker: Listening for jobs on queue: render:jobs

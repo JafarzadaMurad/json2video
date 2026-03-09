@@ -1,0 +1,72 @@
+<?php
+
+use App\Http\Controllers\Admin\AdminLoginController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\PlanRequestController;
+use App\Http\Controllers\Admin\RenderJobController;
+use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserDashboardController;
+use Illuminate\Support\Facades\Route;
+
+// ─── Public Landing Page ──────────────────────
+Route::get('/', function () {
+    return view('portal.landing');
+});
+
+// ─── User Auth ────────────────────────────────
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// ─── User Portal (auth required) ──────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [UserDashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/plans', [UserDashboardController::class, 'plans'])->name('plans');
+    Route::post('/plans/request', [UserDashboardController::class, 'requestPlan'])->name('plans.request');
+});
+
+// ─── Admin Panel ──────────────────────────────
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [AdminLoginController::class, 'showLogin'])->name('admin.login');
+    Route::post('/login', [AdminLoginController::class, 'login']);
+
+    Route::middleware('admin')->group(function () {
+        Route::post('/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
+        Route::get('/', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+        // Users
+        Route::get('/users', [UserController::class, 'index'])->name('admin.users');
+        Route::get('/users/{id}', [UserController::class, 'show'])->name('admin.users.show');
+        Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.delete');
+
+        // Plans
+        Route::get('/plans', [PlanController::class, 'index'])->name('admin.plans');
+        Route::post('/plans', [PlanController::class, 'store'])->name('admin.plans.store');
+        Route::put('/plans/{id}', [PlanController::class, 'update'])->name('admin.plans.update');
+        Route::delete('/plans/{id}', [PlanController::class, 'destroy'])->name('admin.plans.delete');
+
+        // Plan Requests
+        Route::get('/plan-requests', [PlanRequestController::class, 'index'])->name('admin.plan-requests');
+        Route::post('/plan-requests/{id}/approve', [PlanRequestController::class, 'approve'])->name('admin.plan-requests.approve');
+        Route::post('/plan-requests/{id}/reject', [PlanRequestController::class, 'reject'])->name('admin.plan-requests.reject');
+
+        // Render Jobs
+        Route::get('/jobs', [RenderJobController::class, 'index'])->name('admin.jobs');
+        Route::get('/jobs/{id}', [RenderJobController::class, 'show'])->name('admin.jobs.show');
+        Route::delete('/jobs/{id}', [RenderJobController::class, 'destroy'])->name('admin.jobs.delete');
+
+        // Templates
+        Route::get('/templates', [TemplateController::class, 'index'])->name('admin.templates');
+        Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])->name('admin.templates.delete');
+
+        // Render tool
+        Route::get('/render', function () {
+            return view('admin.render'); })->name('admin.render');
+    });
+});

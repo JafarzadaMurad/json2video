@@ -1,0 +1,184 @@
+services:
+  # ─── Nginx Reverse Proxy ──────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./storage/renders:/var/www/renders:ro
+      - ./api:/var/www/html:ro
+      - ./videos:/var/www/media:ro
+    depends_on:
+      - api
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── Laravel API ──────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - ./api:/var/www/html
+      - ./storage/renders:/var/www/html/storage/renders
+    environment:
+      - APP_URL=${APP_URL:-http://localhost:8000}
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=json2video
+      - DB_USERNAME=json2video
+      - DB_PASSWORD=secret123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+      - STORAGE_PATH=/var/www/html/storage/renders
+      - STORAGE_URL=${APP_URL:-http://localhost:8000}/renders
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── Laravel Queue Worker ─────────────────────────
+  queue-worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./api:/var/www/html
+      - ./storage/renders:/var/www/html/storage/renders
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=json2video
+      - DB_USERNAME=json2video
+      - DB_PASSWORD=secret123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - QUEUE_CONNECTION=redis
+    depends_on:
+      - api
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── Laravel Scheduler (Cron) ─────────────────────
+  scheduler:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    volumes:
+      - ./api:/var/www/html
+      - ./storage/renders:/var/www/html/storage/renders
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=json2video
+      - DB_USERNAME=json2video
+      - DB_PASSWORD=secret123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - api
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── Python Render Worker ─────────────────────────
+  renderer:
+    build:
+      context: ./renderer
+      dockerfile: Dockerfile
+    volumes:
+      - ./storage/renders:/app/storage/renders
+      - ./videos:/app/media:ro
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=json2video
+      - DB_USERNAME=json2video
+      - DB_PASSWORD=secret123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - STORAGE_PATH=/app/storage/renders
+      - STORAGE_URL=${APP_URL:-http://localhost:8000}/renders
+      - RENDER_TEMP_DIR=/tmp/renders
+      - WORKER_CONCURRENCY=2
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── MySQL Database ───────────────────────────────
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=json2video
+      - MYSQL_USER=json2video
+      - MYSQL_PASSWORD=secret123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── phpMyAdmin ───────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - PMA_USER=json2video
+      - PMA_PASSWORD=secret123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - json2video
+    restart: unless-stopped
+
+  # ─── Redis ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - json2video
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+
+
+networks:
+  json2video:
+    driver: bridge

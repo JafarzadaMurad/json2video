@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:02,500
+Salam! Bu qısa bir test subtitridir.
+
+2
+00:00:02,500 --> 00:00:05,000
+Bu fayl Azərbaycan dilində hazırlanıb.
+
+3
+00:00:05,000 --> 00:00:07,500
+Subtitr videonun içində görünəcək.
+
+4
+00:00:07,500 --> 00:00:10,000
+İzlədiyiniz üçün təşəkkürlər!

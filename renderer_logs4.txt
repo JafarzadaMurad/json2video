@@ -1,0 +1,25 @@
+﻿renderer-1  | 2026-03-05 11:40:04 [INFO] worker:    MySQL: mysql:3306/json2video
+renderer-1  | 2026-03-05 11:40:04 [INFO] worker:    Storage: /app/storage/renders
+renderer-1  | 2026-03-05 11:40:04 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-05 11:40:04 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-05 11:40:04 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+renderer-1  | 2026-03-05 11:42:21 [INFO] worker: Processing job: 019cbdce-520c-724c-ab2a-c4b9162cc2af
+renderer-1  | 2026-03-05 11:42:21 [INFO] engine: Starting render: 019cbdce-520c-724c-ab2a-c4b9162cc2af (1280x720, quality=medium, scenes=1)
+renderer-1  | 2026-03-05 11:42:21 [INFO] engine: Rendering scene: "Test scene" (duration=3s, elements=1)
+renderer-1  | 2026-03-05 11:42:21 [INFO] element.text: Text element: "Hello JSON2Video!...", size=48, start=0s, duration=3s
+renderer-1  | 2026-03-05 11:42:21 [INFO] engine: Scene 1/1 rendered
+renderer-1  | 2026-03-05 11:42:21 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 11:42:21 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbdce-520c-724c-ab2a-c4b9162cc2af.mp4
+renderer-1  | 2026-03-05 11:42:23 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbdce-520c-724c-ab2a-c4b9162cc2af_thumb.jpg
+renderer-1  | 2026-03-05 11:42:23 [INFO] engine: Render complete: 3.0s video, 0.0 MB, took 2.2s
+renderer-1  | 2026-03-05 11:42:23 [INFO] worker: Job 019cbdce-520c-724c-ab2a-c4b9162cc2af completed successfully. Output: http://localhost:8000/renders/videos/019cbdce-520c-724c-ab2a-c4b9162cc2af.mp4
+renderer-1  | 2026-03-05 11:46:49 [INFO] worker: Processing job: 019cbdd2-69f5-700b-9e11-0c7c508eb6d7
+renderer-1  | 2026-03-05 11:46:49 [INFO] engine: Starting render: 019cbdd2-69f5-700b-9e11-0c7c508eb6d7 (1280x720, quality=medium, scenes=1)
+renderer-1  | 2026-03-05 11:46:49 [INFO] engine: Rendering scene: "Salam Scene" (duration=5s, elements=1)
+renderer-1  | 2026-03-05 11:46:49 [INFO] element.text: Text element: "Salam JSON2Video!...", size=64, start=0s, duration=5s
+renderer-1  | 2026-03-05 11:46:49 [INFO] engine: Scene 1/1 rendered
+renderer-1  | 2026-03-05 11:46:49 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 11:46:49 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbdd2-69f5-700b-9e11-0c7c508eb6d7.mp4
+renderer-1  | 2026-03-05 11:46:53 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbdd2-69f5-700b-9e11-0c7c508eb6d7_thumb.jpg
+renderer-1  | 2026-03-05 11:46:53 [INFO] engine: Render complete: 5.0s video, 0.0 MB, took 3.7s
+renderer-1  | 2026-03-05 11:46:53 [INFO] worker: Job 019cbdd2-69f5-700b-9e11-0c7c508eb6d7 completed successfully. Output: http://localhost:8000/renders/videos/019cbdd2-69f5-700b-9e11-0c7c508eb6d7.mp4

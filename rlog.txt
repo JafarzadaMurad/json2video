@@ -1,0 +1,20 @@
+﻿2026-03-06 19:59:01 [INFO] worker:    Redis: redis:6379
+2026-03-06 19:59:01 [INFO] worker:    MySQL: mysql:3306/json2video
+2026-03-06 19:59:01 [INFO] worker:    Storage: /app/storage/renders
+2026-03-06 19:59:01 [INFO] worker: Connected to Redis ✅
+2026-03-06 19:59:01 [INFO] worker: Connected to MySQL ✅
+2026-03-06 19:59:01 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+2026-03-06 20:26:34 [INFO] worker: Processing job: 019cc4d4-9e9a-7015-88d7-2bb95e8c50b1
+2026-03-06 20:26:34 [INFO] engine: Starting render: 019cc4d4-9e9a-7015-88d7-2bb95e8c50b1 (1080x1920, quality=high, fps=30, scenes=1)
+2026-03-06 20:26:34 [INFO] engine: Rendering scene: "V1" (duration=10s, elements=3)
+2026-03-06 20:26:34 [INFO] downloader: Downloading: http://nginx:80/media/Tiny%20House%20Tour%20%20Minimalist%20Decor%20%26%20Peaceful%20Nature%20Views.mp4
+2026-03-06 20:26:34 [INFO] downloader: Downloaded: f952a1347404bd25b6d19f9c0415b93b.mp4 (1458.5 KB)
+2026-03-06 20:26:35 [INFO] element.video: Video element: 1080x608, start=0s, duration=10.0s
+2026-03-06 20:26:35 [INFO] element.text: Text element: "Tiny House...", size=64, start=0s, duration=10s
+2026-03-06 20:26:35 [INFO] element.subtitles: Subtitles: "Bu test subtitridir...", y=1750, size=28
+2026-03-06 20:26:35 [INFO] engine: Scene 1/1 rendered
+2026-03-06 20:26:35 [INFO] engine: Concatenating scenes...
+2026-03-06 20:26:35 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cc4d4-9e9a-7015-88d7-2bb95e8c50b1.mp4
+2026-03-06 20:26:59 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cc4d4-9e9a-7015-88d7-2bb95e8c50b1_thumb.jpg
+2026-03-06 20:26:59 [INFO] engine: Render complete: 10.0s video, 8.3 MB, took 24.4s
+2026-03-06 20:26:59 [INFO] worker: Job 019cc4d4-9e9a-7015-88d7-2bb95e8c50b1 completed successfully. Output: http://localhost:8000/renders/videos/019cc4d4-9e9a-7015-88d7-2bb95e8c50b1.mp4

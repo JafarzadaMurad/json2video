@@ -1,0 +1,20 @@
+﻿2026-03-04 21:06:21 [INFO] worker:    Redis: redis:6379
+2026-03-04 21:06:21 [INFO] worker:    MySQL: mysql:3306/json2video
+2026-03-04 21:06:21 [INFO] worker:    Storage: /app/storage/renders
+2026-03-04 21:06:21 [INFO] worker: Connected to Redis ✅
+2026-03-04 21:06:21 [INFO] worker: Connected to MySQL ✅
+2026-03-04 21:06:21 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+2026-03-04 21:06:21 [INFO] worker: Processing job: 019cbaa0-9e4d-7215-9233-c10901f7ad03
+2026-03-04 21:06:21 [INFO] engine: Starting render: 019cbaa0-9e4d-7215-9233-c10901f7ad03 (1280x720, quality=medium, scenes=1)
+2026-03-04 21:06:21 [INFO] engine: Rendering scene: "Test scene" (duration=3s, elements=1)
+2026-03-04 21:06:21 [ERROR] engine: Failed to render text element: MoviePy Error: creation of None failed because of the following error:
+
+[Errno 2] No such file or directory: 'unset'.
+
+.This error can be due to the fac       t that ImageMagick is not installed on your computer, or (for Windows users) that you didn't specify the path to the ImageMagick binary in file conf.py, or that the path you specified is incorrect
+2026-03-04 21:06:21 [INFO] engine: Scene 1/1 rendered
+2026-03-04 21:06:21 [INFO] engine: Concatenating scenes...
+2026-03-04 21:06:21 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbaa0-9e4d-7215-9233-c10901f7ad03.mp4
+2026-03-04 21:06:22 [WARNING] engine: Failed to generate thumbnail: cannot write mode RGBA as JPEG
+2026-03-04 21:06:22 [INFO] engine: Render complete: 3.0s video, 0.0 MB, took 1.2s
+2026-03-04 21:06:22 [INFO] worker: Job 019cbaa0-9e4d-7215-9233-c10901f7ad03 completed successfully. Output: http://localhost:8000/renders/videos/019cbaa0-9e4d-7215-9233-c10901f7ad03.mp4

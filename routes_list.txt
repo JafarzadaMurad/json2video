@@ -1,0 +1,18 @@
+﻿
+  GET|HEAD  api/v1/account ................................................... 
+  POST      api/v1/movies ....................... Api\V1\MovieController@store
+  GET|HEAD  api/v1/movies ....................... Api\V1\MovieController@index
+  GET|HEAD  api/v1/movies/{jobId} ................ Api\V1\MovieController@show
+  DELETE    api/v1/movies/{jobId} ............. Api\V1\MovieController@destroy
+  GET|HEAD  api/v1/templates ................. Api\V1\TemplateController@index
+  POST      api/v1/templates ................. Api\V1\TemplateController@store
+  GET|HEAD  api/v1/templates/{id} ............. Api\V1\TemplateController@show
+  PUT       api/v1/templates/{id} ........... Api\V1\TemplateController@update
+  DELETE    api/v1/templates/{id} .......... Api\V1\TemplateController@destroy
+  POST      api/v1/templates/{id}/render .... Api\V1\TemplateController@render
+  GET|HEAD  api/v1/webhooks .................... Api\V1\WebhookController@show
+  POST      api/v1/webhooks ................... Api\V1\WebhookController@store
+  DELETE    api/v1/webhooks ................. Api\V1\WebhookController@destroy
+
+                                                           Showing [14] routes
+

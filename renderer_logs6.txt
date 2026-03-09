@@ -1,0 +1,25 @@
+﻿renderer-1  | 2026-03-05 12:06:22 [INFO] worker: Connected to Redis ✅
+renderer-1  | 2026-03-05 12:06:22 [INFO] worker: Connected to MySQL ✅
+renderer-1  | 2026-03-05 12:06:22 [INFO] worker: Listening for jobs on queue: laravel-database-render:jobs
+renderer-1  | 2026-03-05 12:06:48 [INFO] worker: Processing job: 019cbde4-b62a-7289-956e-5eaa44ba73fc
+renderer-1  | 2026-03-05 12:06:48 [INFO] engine: Starting render: 019cbde4-b62a-7289-956e-5eaa44ba73fc (1280x720, quality=high, scenes=3)
+renderer-1  | 2026-03-05 12:06:48 [INFO] engine: Rendering scene: "Intro" (duration=4s, elements=3)
+renderer-1  | 2026-03-05 12:06:48 [INFO] downloader: Downloading: https://picsum.photos/1280/720
+renderer-1  | 2026-03-05 12:06:49 [INFO] downloader: Downloaded: 3cfe39c4139f0ed2b2c453bd739bc265.jpg (85.4 KB)
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.image: Image element: 1280x720, start=0s, duration=4s
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.text: Text element: "JSON2Video Platform...", size=72, start=0s, duration=4s
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.text: Text element: "Video yarat JSON ile!...", size=36, start=0s, duration=4s
+renderer-1  | 2026-03-05 12:06:49 [INFO] engine: Scene 1/3 rendered
+renderer-1  | 2026-03-05 12:06:49 [INFO] engine: Rendering scene: "Features" (duration=3s, elements=2)
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.text: Text element: "Image + Text + Audio...", size=56, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.text: Text element: "Powered by FFmpeg...", size=28, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:06:49 [INFO] engine: Scene 2/3 rendered
+renderer-1  | 2026-03-05 12:06:49 [INFO] engine: Rendering scene: "Outro" (duration=3s, elements=2)
+renderer-1  | 2026-03-05 12:06:49 [INFO] element.image: Image element: 1280x720, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:06:50 [INFO] element.text: Text element: "json2video.com...", size=64, start=0s, duration=3s
+renderer-1  | 2026-03-05 12:06:50 [INFO] engine: Scene 3/3 rendered
+renderer-1  | 2026-03-05 12:06:50 [INFO] engine: Concatenating scenes...
+renderer-1  | 2026-03-05 12:06:50 [INFO] engine: Encoding final video: /app/storage/renders/videos/019cbde4-b62a-7289-956e-5eaa44ba73fc.mp4
+renderer-1  | 2026-03-05 12:07:17 [INFO] engine: Thumbnail generated: /app/storage/renders/thumbnails/019cbde4-b62a-7289-956e-5eaa44ba73fc_thumb.jpg
+renderer-1  | 2026-03-05 12:07:17 [INFO] engine: Render complete: 10.0s video, 0.3 MB, took 29.0s
+renderer-1  | 2026-03-05 12:07:17 [INFO] worker: Job 019cbde4-b62a-7289-956e-5eaa44ba73fc completed successfully. Output: http://localhost:8000/renders/videos/019cbde4-b62a-7289-956e-5eaa44ba73fc.mp4

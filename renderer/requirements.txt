@@ -1,0 +1,7 @@
+redis==5.0.1
+moviepy==1.0.3
+Pillow==10.4.0
+mysql-connector-python==8.3.0
+requests==2.31.0
+python-dotenv==1.0.1
+uuid6==2024.1.12

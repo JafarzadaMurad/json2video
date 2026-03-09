@@ -1,0 +1,34 @@
+# Dependencies
+/api/vendor/
+/api/node_modules/
+/renderer/__pycache__/
+/renderer/app/__pycache__/
+/renderer/app/**/__pycache__/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage (rendered videos)
+/storage/renders/videos/*.mp4
+/storage/renders/thumbnails/*.jpg
+
+# Docker volumes
+mysql_data/
+redis_data/
+
+# Logs
+*.log
+
+# Temp
+/tmp/
