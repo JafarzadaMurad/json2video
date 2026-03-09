@@ -107,6 +107,7 @@ services:
       - DB_PASSWORD=secret123
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PREFIX=json2video-database-
       - STORAGE_PATH=/app/storage/renders
       - STORAGE_URL=${APP_URL:-http://localhost:8000}/renders
       - RENDER_TEMP_DIR=/tmp/renders
