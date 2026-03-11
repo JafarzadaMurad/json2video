@@ -21,15 +21,34 @@ from app.utils.downloader import download_asset
 logger = logging.getLogger('element.subtitles')
 
 
-def parse_srt(filepath: str) -> list:
-    """
-    Parse an SRT file and return a list of subtitle entries.
-    Each entry: {'index': int, 'start': float, 'end': float, 'text': str}
-    """
-    with open(filepath, 'r', encoding='utf-8-sig') as f:
-        content = f.read()
+def _read_text_file(filepath: str) -> str:
+    """Read a text file with encoding fallback."""
+    for encoding in ('utf-8-sig', 'utf-8', 'latin-1', 'cp1251'):
+        try:
+            with open(filepath, 'r', encoding=encoding) as f:
+                return f.read()
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    raise ValueError(f'Cannot decode subtitle file (not a text file): {filepath}')
 
-    # Split into blocks by double newline
+
+def detect_subtitle_format(filepath: str, content: str) -> str:
+    """Detect subtitle format from content or extension."""
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext in ('.ass', '.ssa'):
+        return 'ass'
+    if ext == '.srt':
+        return 'srt'
+    # Auto-detect from content
+    if '[Script Info]' in content or 'ScriptType:' in content:
+        return 'ass'
+    if re.search(r'\d{2}:\d{2}:\d{2}[,.]\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}[,.]\d{3}', content):
+        return 'srt'
+    return 'unknown'
+
+
+def parse_srt(content: str) -> list:
+    """Parse SRT content and return subtitle entries."""
     blocks = re.split(r'\n\s*\n', content.strip())
     entries = []
 
@@ -38,8 +57,6 @@ def parse_srt(filepath: str) -> list:
         if len(lines) < 3:
             continue
 
-        # Line 1: index (skip)
-        # Line 2: timestamp
         timestamp_line = lines[1].strip()
         match = re.match(
             r'(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})',
@@ -52,10 +69,7 @@ def parse_srt(filepath: str) -> list:
         start = int(h1) * 3600 + int(m1) * 60 + int(s1) + int(ms1) / 1000.0
         end = int(h2) * 3600 + int(m2) * 60 + int(s2) + int(ms2) / 1000.0
 
-        # Lines 3+: subtitle text
         text = '\n'.join(line.strip() for line in lines[2:] if line.strip())
-
-        # Remove HTML tags (e.g. <i>, <b>)
         text = re.sub(r'<[^>]+>', '', text)
 
         if text:
@@ -66,6 +80,69 @@ def parse_srt(filepath: str) -> list:
                 'text': text,
             })
 
+    return entries
+
+
+def _parse_ass_time(time_str: str) -> float:
+    """Parse ASS timestamp format: H:MM:SS.CC (centiseconds)"""
+    match = re.match(r'(\d+):(\d{2}):(\d{2})\.(\d{2})', time_str.strip())
+    if not match:
+        return 0.0
+    h, m, s, cs = match.groups()
+    return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100.0
+
+
+def parse_ass(content: str) -> list:
+    """Parse ASS/SSA content and return subtitle entries."""
+    entries = []
+    in_events = False
+    format_fields = None
+
+    for line in content.split('\n'):
+        line = line.strip()
+
+        if line.lower() == '[events]':
+            in_events = True
+            continue
+
+        if line.startswith('[') and in_events:
+            break  # next section
+
+        if not in_events:
+            continue
+
+        if line.lower().startswith('format:'):
+            format_fields = [f.strip().lower() for f in line[7:].split(',')]
+            continue
+
+        if line.startswith('Dialogue:') and format_fields:
+            # Split only up to the number of format fields
+            parts = line[9:].split(',', len(format_fields) - 1)
+            if len(parts) < len(format_fields):
+                continue
+
+            field_map = dict(zip(format_fields, parts))
+
+            start = _parse_ass_time(field_map.get('start', '0:00:00.00'))
+            end = _parse_ass_time(field_map.get('end', '0:00:00.00'))
+            text = field_map.get('text', '').strip()
+
+            # Remove ASS style tags like {\pos(x,y)} {\an8} {\b1}
+            text = re.sub(r'\{[^}]*\}', '', text)
+            # Replace \N with space (ASS line break)
+            text = text.replace('\\N', ' ').replace('\\n', ' ')
+            text = text.strip()
+
+            if text and end > start:
+                entries.append({
+                    'index': len(entries) + 1,
+                    'start': start,
+                    'end': end,
+                    'text': text,
+                })
+
+    # Sort by start time
+    entries.sort(key=lambda e: e['start'])
     return entries
 
 
@@ -95,7 +172,7 @@ class SubtitlesElement(BaseElement):
         # animation can be: "fade-in", "fade-out", "word-by-word", "highlight", or dict with type+params
 
         if src:
-            return self._render_srt(src, temp_dir, style, position, animation)
+            return self._render_subtitle_file(src, temp_dir, style, position, animation)
 
         if not text:
             raise ValueError('Subtitles element requires "text" or "src" field')
@@ -198,16 +275,36 @@ class SubtitlesElement(BaseElement):
         logger.info(f'Subtitles (inline): "{text[:40]}...", y={y_pos}')
         return clip
 
-    def _render_srt(self, src, temp_dir, style, position, animation):
-        """Render SRT file as multiple timed subtitle clips."""
-        logger.info(f'Subtitles from SRT: {src}')
+    def _render_subtitle_file(self, src, temp_dir, style, position, animation):
+        """Render subtitle file (SRT or ASS) as multiple timed subtitle clips."""
+        logger.info(f'Subtitles from file: {src}')
         local_path = download_asset(src, temp_dir)
-        entries = parse_srt(local_path)
+
+        # Read file with encoding fallback
+        try:
+            content = _read_text_file(local_path)
+        except ValueError as e:
+            raise ValueError(f'Cannot read subtitle file: {e}. '
+                             f'Make sure the URL points to an SRT or ASS file, not a video.')
+
+        # Detect format
+        fmt = detect_subtitle_format(local_path, content)
+        logger.info(f'Detected subtitle format: {fmt}')
+
+        if fmt == 'srt':
+            entries = parse_srt(content)
+        elif fmt == 'ass':
+            entries = parse_ass(content)
+        else:
+            raise ValueError(
+                f'Unknown subtitle format for: {src}. '
+                f'Supported formats: .srt, .ass/.ssa'
+            )
 
         if not entries:
-            raise ValueError(f'No valid subtitle entries found in SRT file: {src}')
+            raise ValueError(f'No valid subtitle entries found in {fmt.upper()} file: {src}')
 
-        logger.info(f'Parsed {len(entries)} subtitle entries from SRT')
+        logger.info(f'Parsed {len(entries)} subtitle entries from {fmt.upper()}')
 
         clips = []
         element_start = self.start
