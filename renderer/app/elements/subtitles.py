@@ -484,35 +484,36 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Neon glow: stacked blur layers, drawn multiple times for intensity ──
+        # ── 1) Neon glow: thick stroke blob → blur → boost alpha ──
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # Layer 1: Wide soft glow — draw 4x for strong brightness
-        glow1 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        for _ in range(4):
-            tmp = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-            _draw_text_layer(ImageDraw.Draw(tmp), get_word_color)
-            glow1 = Image.alpha_composite(glow1, tmp)
-        glow1 = glow1.filter(ImageFilter.GaussianBlur(radius=18))
-        result = Image.alpha_composite(result, glow1)
+        # Draw text with VERY thick stroke in glow color to create big colored area
+        glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow_img)
+        glow_stroke = max(8, style['font_size'] // 4)  # thick glow stroke
 
-        # Layer 2: Medium glow — draw 3x
-        glow2 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        for _ in range(3):
-            tmp = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-            _draw_text_layer(ImageDraw.Draw(tmp), get_word_color)
-            glow2 = Image.alpha_composite(glow2, tmp)
-        glow2 = glow2.filter(ImageFilter.GaussianBlur(radius=8))
-        result = Image.alpha_composite(result, glow2)
+        y = padding
+        for line in lines:
+            line_text = ' '.join(w for w, _ in line)
+            total_w = font.getlength(line_text)
+            x = (img_w - total_w) / 2
+            for word, idx in line:
+                color = get_word_color(idx)
+                glow_draw.text((x, y), word, font=font, fill=color,
+                               stroke_width=glow_stroke, stroke_fill=color)
+                x += font.getlength(word + ' ')
+            y += line_height
 
-        # Layer 3: Tight bright core — draw 2x
-        glow3 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        for _ in range(2):
-            tmp = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-            _draw_text_layer(ImageDraw.Draw(tmp), get_word_color)
-            glow3 = Image.alpha_composite(glow3, tmp)
-        glow3 = glow3.filter(ImageFilter.GaussianBlur(radius=3))
-        result = Image.alpha_composite(result, glow3)
+        # Blur for smooth glow spread
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=10))
+
+        # Boost alpha channel so glow is actually visible on video
+        r, g, b, a = glow_img.split()
+        import PIL.ImageEnhance as ImageEnhance
+        a = a.point(lambda p: min(255, int(p * 2.5)))  # amplify alpha
+        glow_img = Image.merge('RGBA', (r, g, b, a))
+
+        result = Image.alpha_composite(result, glow_img)
 
         # ── 2) Sharp text with stroke on top ──
         main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
