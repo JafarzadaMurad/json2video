@@ -84,11 +84,13 @@ def parse_srt(content: str) -> list:
 
 
 def _parse_ass_time(time_str: str) -> float:
-    """Parse ASS timestamp format: H:MM:SS.CC (centiseconds)"""
-    match = re.match(r'(\d+):(\d{2}):(\d{2})\.(\d{2})', time_str.strip())
+    """Parse ASS timestamp format: H:MM:SS.CC (flexible digit counts)"""
+    match = re.match(r'(\d+):(\d+):(\d+)\.(\d+)', time_str.strip())
     if not match:
         return 0.0
     h, m, s, cs = match.groups()
+    # Centiseconds: pad/truncate to 2 digits
+    cs = cs[:2].ljust(2, '0')
     return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100.0
 
 
