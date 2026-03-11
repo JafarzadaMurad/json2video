@@ -416,7 +416,7 @@ class SubtitlesElement(BaseElement):
         return clip
 
     def _render_styled_subtitle(self, text, style, highlight_color, entry_index):
-        """Render subtitle with random highlighted word, glow, and stroke using Pillow."""
+        """Render subtitle with random highlighted word, neon glow, and stroke."""
         import random
         from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -424,7 +424,7 @@ class SubtitlesElement(BaseElement):
         if not words:
             words = [text]
 
-        # Pick 1 random word to highlight (deterministic per entry for consistency)
+        # Pick 1 random word to highlight (deterministic per entry)
         rng = random.Random(entry_index * 7 + len(text))
         highlight_idx = rng.randint(0, len(words) - 1)
 
@@ -436,6 +436,7 @@ class SubtitlesElement(BaseElement):
 
         font = ImageFont.truetype(font_path, style['font_size'])
         max_width = self.resolution[0] - 100
+        # Base color = user's color, highlight = palette color
         base_color = style['color']
         stroke_color = style.get('stroke_color') or '#000000'
         stroke_width = style.get('stroke_width', 2)
@@ -461,31 +462,50 @@ class SubtitlesElement(BaseElement):
 
         # Image dimensions
         line_height = int(font.size * 1.4)
-        glow_pad = 20  # extra padding for glow blur
+        glow_pad = 30
         padding = stroke_width + glow_pad
         img_h = len(lines) * line_height + padding * 2
         img_w = max_width + glow_pad * 2
 
-        # ── 1) Glow layer: draw text in highlight color, then blur ──
-        glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        glow_draw = ImageDraw.Draw(glow_img)
+        def _draw_text_layer(draw, color_fn):
+            """Helper to draw text with per-word color function."""
+            y = padding
+            for line in lines:
+                line_text = ' '.join(w for w, _ in line)
+                total_w = font.getlength(line_text)
+                x = (img_w - total_w) / 2
+                for word, idx in line:
+                    color = color_fn(idx)
+                    if color:
+                        draw.text((x, y), word, font=font, fill=color)
+                    x += font.getlength(word + ' ')
+                y += line_height
 
-        y = padding
-        for line in lines:
-            line_text = ' '.join(w for w, _ in line)
-            total_w = font.getlength(line_text)
-            x = (img_w - total_w) / 2
+        def get_word_color(idx):
+            return highlight_color if idx == highlight_idx else base_color
 
-            for word, idx in line:
-                color = highlight_color if idx == highlight_idx else base_color
-                glow_draw.text((x, y), word, font=font, fill=color)
-                x += font.getlength(word + ' ')
-            y += line_height
+        # ── 1) Neon glow: 3 stacked blur layers ──
+        result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # Blur for glow effect
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=8))
+        # Layer 1: Wide soft glow (large blur)
+        glow1 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        _draw_text_layer(ImageDraw.Draw(glow1), get_word_color)
+        glow1 = glow1.filter(ImageFilter.GaussianBlur(radius=12))
+        result = Image.alpha_composite(result, glow1)
 
-        # ── 2) Main text layer: sharp text with stroke ──
+        # Layer 2: Medium glow
+        glow2 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        _draw_text_layer(ImageDraw.Draw(glow2), get_word_color)
+        glow2 = glow2.filter(ImageFilter.GaussianBlur(radius=6))
+        result = Image.alpha_composite(result, glow2)
+
+        # Layer 3: Tight bright glow
+        glow3 = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        _draw_text_layer(ImageDraw.Draw(glow3), get_word_color)
+        glow3 = glow3.filter(ImageFilter.GaussianBlur(radius=3))
+        result = Image.alpha_composite(result, glow3)
+
+        # ── 2) Sharp text with stroke on top ──
         main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         main_draw = ImageDraw.Draw(main_img)
 
@@ -494,16 +514,14 @@ class SubtitlesElement(BaseElement):
             line_text = ' '.join(w for w, _ in line)
             total_w = font.getlength(line_text)
             x = (img_w - total_w) / 2
-
             for word, idx in line:
-                color = highlight_color if idx == highlight_idx else base_color
+                color = get_word_color(idx)
                 main_draw.text((x, y), word, font=font, fill=color,
                                stroke_width=stroke_width, stroke_fill=stroke_color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        # ── 3) Composite: glow behind, sharp text on top ──
-        result = Image.alpha_composite(glow_img, main_img)
+        result = Image.alpha_composite(result, main_img)
         return result
 
     def _anim_bounce(self, clip, start_time, duration, params):
