@@ -472,7 +472,7 @@ class SubtitlesElement(BaseElement):
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # ── 1) Glow ONLY on highlighted word — FULLY OPAQUE ──
+        # ── 1) Glow on ALL words ──
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
         glow_stroke = 8  # thick blob for strong glow
@@ -483,9 +483,9 @@ class SubtitlesElement(BaseElement):
             total_w = font.getlength(line_text)
             x = (img_w - total_w) / 2
             for word, idx in line:
-                if idx == highlight_idx:
-                    glow_draw.text((x, y), word, font=font, fill=highlight_color,
-                                   stroke_width=glow_stroke, stroke_fill=highlight_color)
+                color = get_word_color(idx)
+                glow_draw.text((x, y), word, font=font, fill=color,
+                               stroke_width=glow_stroke, stroke_fill=color)
                 x += font.getlength(word + ' ')
             y += line_height
 
