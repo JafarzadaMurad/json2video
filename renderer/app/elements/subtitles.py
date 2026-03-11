@@ -322,7 +322,7 @@ class SubtitlesElement(BaseElement):
         return clips
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
-        """Karaoke effect: words progressively change to highlight color as they're 'read'."""
+        """Karaoke effect: words appear progressively in highlight color."""
         words = text.split()
         if not words:
             return []
@@ -331,6 +331,10 @@ class SubtitlesElement(BaseElement):
         clips = []
         time_per_word = duration / len(words)
 
+        # Use highlight color for the progressive text
+        h_style = style.copy()
+        h_style['color'] = highlight_color
+
         for i in range(len(words)):
             word_start = start_time + i * time_per_word
             word_dur = time_per_word
@@ -338,39 +342,20 @@ class SubtitlesElement(BaseElement):
             if word_dur <= 0:
                 continue
 
-            # Build full text in highlight color (for words 0..i)
-            # and full text in base color (for words i+1..end)
-            # The trick: render highlighted portion as accumulated text clip
+            # Show words 0..i accumulated in highlight color
+            accumulated_text = ' '.join(words[:i + 1])
+            clip = self._make_text_clip(accumulated_text, h_style)
 
-            highlighted_words = ' '.join(words[:i + 1])
-            remaining_words = ' '.join(words[i + 1:]) if i < len(words) - 1 else ''
-
-            # Render highlighted portion (already "read" words)
-            h_style = style.copy()
-            h_style['color'] = highlight_color
-            h_clip = self._make_text_clip(highlighted_words, h_style)
-            x_pos = self._get_x_pos(h_clip.w, position)
-            y_pos = self._get_y_pos(h_clip.h, position)
-            h_clip = h_clip.set_position((x_pos, y_pos))
-            h_clip = h_clip.set_start(word_start)
-            h_clip = h_clip.set_duration(word_dur)
-
-            clips.append(h_clip)
-
-            # Render remaining portion (upcoming words) below/after
-            if remaining_words:
-                r_clip = self._make_text_clip(remaining_words, style)
-                # Position below the highlighted text
-                r_y = y_pos + h_clip.h + 5
-                r_x = self._get_x_pos(r_clip.w, position)
-                r_clip = r_clip.set_position((r_x, r_y))
-                r_clip = r_clip.set_start(word_start)
-                r_clip = r_clip.set_duration(word_dur)
-                clips.append(r_clip)
+            x_pos = self._get_x_pos(clip.w, position)
+            y_pos = self._get_y_pos(clip.h, position)
+            clip = clip.set_position((x_pos, y_pos))
+            clip = clip.set_start(word_start)
+            clip = clip.set_duration(word_dur)
 
             if self.opacity < 1.0:
-                for c in clips[-2:]:
-                    c = c.set_opacity(self.opacity)
+                clip = clip.set_opacity(self.opacity)
+
+            clips.append(clip)
 
         return clips
 
