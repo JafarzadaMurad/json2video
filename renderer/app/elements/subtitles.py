@@ -484,13 +484,12 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Neon glow: thick stroke blob → blur → boost alpha ──
+        # ── 1) Subtle neon glow: thin stroke → blur → gentle alpha boost ──
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # Draw text with VERY thick stroke in glow color to create big colored area
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
-        glow_stroke = max(8, style['font_size'] // 4)  # thick glow stroke
+        glow_stroke = 4  # subtle glow spread
 
         y = padding
         for line in lines:
@@ -504,13 +503,12 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        # Blur for smooth glow spread
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=10))
+        # Gentle blur
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
 
-        # Boost alpha channel so glow is actually visible on video
+        # Light alpha boost
         r, g, b, a = glow_img.split()
-        import PIL.ImageEnhance as ImageEnhance
-        a = a.point(lambda p: min(255, int(p * 2.5)))  # amplify alpha
+        a = a.point(lambda p: min(255, int(p * 1.5)))
         glow_img = Image.merge('RGBA', (r, g, b, a))
 
         result = Image.alpha_composite(result, glow_img)
