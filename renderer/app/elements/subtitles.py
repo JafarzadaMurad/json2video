@@ -322,7 +322,7 @@ class SubtitlesElement(BaseElement):
         return clips
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
-        """All text visible, but current word gets highlighted color."""
+        """Karaoke effect: all text in base color, current word highlighted."""
         words = text.split()
         if not words:
             return []
@@ -338,39 +338,39 @@ class SubtitlesElement(BaseElement):
             if word_dur <= 0:
                 continue
 
-            # Build text with highlight: render full text in base color on one layer,
-            # and highlighted word on top
+            # Build text where current word is highlighted:
+            # Replace the current word with highlighted version by building
+            # the full text with all words in base color (shown as background)
             base_clip = self._make_text_clip(text, style)
             x_pos = self._get_x_pos(base_clip.w, position)
-            base_clip = base_clip.set_position((x_pos, self._get_y_pos(base_clip.h, position)))
+            y_pos = self._get_y_pos(base_clip.h, position)
+            base_clip = base_clip.set_position((x_pos, y_pos))
             base_clip = base_clip.set_start(word_start)
             base_clip = base_clip.set_duration(word_dur)
 
-            # Create highlighted version of the text
+            # Build highlighted version: same full text but with highlight color
+            # We use a trick: render text where non-active words are invisible
+            # by replacing them with spaces to maintain positioning
+            before_spaces = ' ' * len(' '.join(words[:i])) + (' ' if i > 0 else '')
+            after_spaces = (' ' if i < len(words) - 1 else '') + ' ' * len(' '.join(words[i+1:]))
+            highlighted_text = before_spaces + words[i] + after_spaces
+
             highlight_style = style.copy()
             highlight_style['color'] = highlight_color
+            # Remove stroke from highlight layer to avoid double stroke
+            highlight_style['stroke_color'] = None
 
-            # Build text with spaces replaced by transparent chars for non-current words
-            before = ' '.join(words[:i])
-            after = ' '.join(words[i + 1:])
-            # We'll render just the highlighted word at the right position
-            # by using a trick: render the word offset
-
-            highlight_clip = self._make_text_clip(text, highlight_style)
-            # Mask: only show the highlighted word area
-            # Simpler approach: overlay the highlighted full text briefly
-            highlight_clip = highlight_clip.set_position((x_pos, self._get_y_pos(highlight_clip.h, position)))
-            highlight_clip = highlight_clip.set_start(word_start)
-            highlight_clip = highlight_clip.set_duration(word_dur)
+            h_clip = self._make_text_clip(highlighted_text, highlight_style)
+            h_clip = h_clip.set_position((x_pos, y_pos))
+            h_clip = h_clip.set_start(word_start)
+            h_clip = h_clip.set_duration(word_dur)
 
             if self.opacity < 1.0:
                 base_clip = base_clip.set_opacity(self.opacity)
-                highlight_clip = highlight_clip.set_opacity(self.opacity)
+                h_clip = h_clip.set_opacity(self.opacity)
 
-            # For simplicity, just show the base first, then highlighted full text
-            # The highlighted version covers the base
             clips.append(base_clip)
-            clips.append(highlight_clip)
+            clips.append(h_clip)
 
         return clips
 
