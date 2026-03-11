@@ -5,7 +5,7 @@ Supports:
   - Inline text via "text" field (single subtitle)
   - SRT file via "src" field (multiple timed subtitles)
   - Position: bottom, top, left, right (pixel offsets)
-  - Animations: fade-in, fade-out, word-by-word, highlight
+  - Animations: fade-in, fade-out, word-by-word, highlight, bounce
   - Stroke/outline for readability
 """
 import logging
@@ -19,6 +19,18 @@ from app.elements.base import BaseElement
 from app.utils.downloader import download_asset
 
 logger = logging.getLogger('element.subtitles')
+
+# Auto-color palette for highlight-color: "auto"
+AUTO_HIGHLIGHT_COLORS = [
+    '#ffff00',  # yellow
+    '#ff3333',  # red
+    '#33ff57',  # green
+    '#33ccff',  # blue
+    '#ff8c1a',  # orange
+    '#ff33ff',  # pink/magenta
+    '#00ffcc',  # teal
+    '#ff6699',  # rose
+]
 
 
 def _read_text_file(filepath: str) -> str:
@@ -164,6 +176,7 @@ class SubtitlesElement(BaseElement):
             'stroke_width': self.data.get('stroke-width', 2),
             'font': self.data.get('font', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
             'bold': self.data.get('bold', False),
+            'highlight_color': self.data.get('highlight-color', None),
         }
 
         # ─── Position ──────────────────────────────
@@ -171,7 +184,7 @@ class SubtitlesElement(BaseElement):
 
         # ─── Animation ─────────────────────────────
         animation = self.data.get('animation', None)
-        # animation can be: "fade-in", "fade-out", "word-by-word", "highlight", or dict with type+params
+        # animation can be: "fade-in", "fade-out", "word-by-word", "highlight", "bounce" or dict
 
         if src:
             return self._render_subtitle_file(src, temp_dir, style, position, animation)
@@ -328,7 +341,7 @@ class SubtitlesElement(BaseElement):
 
             result = self._apply_subtitle_animation(
                 None, entry['text'], style, position, animation,
-                sub_start, sub_duration
+                sub_start, sub_duration, entry_index=entry['index'] - 1
             )
 
             if isinstance(result, list):
@@ -341,7 +354,7 @@ class SubtitlesElement(BaseElement):
 
         return clips
 
-    def _apply_subtitle_animation(self, clip, text, style, position, animation, start_time, duration):
+    def _apply_subtitle_animation(self, clip, text, style, position, animation, start_time, duration, entry_index=0):
         """Apply animation to subtitle clip. Returns clip or list of clips."""
         anim_type = None
         anim_params = {}
@@ -352,17 +365,34 @@ class SubtitlesElement(BaseElement):
             anim_type = animation.get('type')
             anim_params = animation
 
+        # Resolve highlight-color: from animation params, style, or auto
+        highlight_color = anim_params.get('highlight-color') or style.get('highlight_color')
+        if highlight_color == 'auto':
+            highlight_color = AUTO_HIGHLIGHT_COLORS[entry_index % len(AUTO_HIGHLIGHT_COLORS)]
+
         # ── word-by-word: each word appears one at a time ──
         if anim_type == 'word-by-word':
+            if highlight_color:
+                # Word-by-word with color = highlight effect
+                merged = {**anim_params, 'highlight-color': highlight_color}
+                return self._anim_highlight(text, style, position, start_time, duration, merged)
             return self._anim_word_by_word(text, style, position, start_time, duration, anim_params)
 
         # ── highlight: text appears, words get highlighted sequentially ──
         if anim_type == 'highlight':
+            if highlight_color:
+                anim_params = {**anim_params, 'highlight-color': highlight_color}
             return self._anim_highlight(text, style, position, start_time, duration, anim_params)
 
-        # ── Standard clip with fade ──
+        # ── Standard clip (no word animation) ──
         if clip is None:
-            clip = self._make_text_clip(text, style)
+            # If highlight-color set but no word animation, render colored text
+            if highlight_color:
+                eff_style = style.copy()
+                eff_style['color'] = highlight_color
+                clip = self._make_text_clip(text, eff_style)
+            else:
+                clip = self._make_text_clip(text, style)
             x_pos = self._get_x_pos(clip.w, position)
             y_pos = self._get_y_pos(clip.h, position)
             clip = clip.set_position((x_pos, y_pos))
@@ -380,7 +410,31 @@ class SubtitlesElement(BaseElement):
         elif anim_type == 'fade':
             fade_dur = anim_params.get('duration', 0.3) if isinstance(anim_params, dict) else 0.3
             clip = clip.crossfadein(fade_dur).crossfadeout(fade_dur)
+        elif anim_type == 'bounce':
+            return self._anim_bounce(clip, start_time, duration, anim_params)
 
+        return clip
+
+    def _anim_bounce(self, clip, start_time, duration, params):
+        """Bounce-in animation: subtitle pops in with elastic bounce."""
+        bounce_dur = params.get('duration', 0.3)
+        bounce_dur = min(bounce_dur, duration * 0.5)
+
+        def bounce_scale(t):
+            """Scale function: 0→overshoot→settle at 1.0"""
+            if t >= bounce_dur:
+                return 1.0
+            progress = t / bounce_dur
+            # Ease-out bounce: quick scale up with overshoot
+            if progress < 0.6:
+                # Fast scale up to 1.15
+                return 0.3 + (1.15 - 0.3) * (progress / 0.6)
+            else:
+                # Settle from 1.15 back to 1.0
+                settle = (progress - 0.6) / 0.4
+                return 1.15 - 0.15 * settle
+
+        clip = clip.resize(lambda t: bounce_scale(t))
         return clip
 
     def _anim_word_by_word(self, text, style, position, start_time, duration, params):
