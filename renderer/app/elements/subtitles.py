@@ -322,7 +322,7 @@ class SubtitlesElement(BaseElement):
         return clips
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
-        """Karaoke effect: words appear progressively in highlight color."""
+        """True karaoke: full text in base color, words progressively turn highlight color."""
         words = text.split()
         if not words:
             return []
@@ -331,31 +331,41 @@ class SubtitlesElement(BaseElement):
         clips = []
         time_per_word = duration / len(words)
 
-        # Use highlight color for the progressive text
+        # 1) Base layer: full text in base color for entire subtitle duration
+        base_clip = self._make_text_clip(text, style)
+        x_pos = self._get_x_pos(base_clip.w, position)
+        y_pos = self._get_y_pos(base_clip.h, position)
+        base_clip = base_clip.set_position((x_pos, y_pos))
+        base_clip = base_clip.set_start(start_time)
+        base_clip = base_clip.set_duration(duration)
+        if self.opacity < 1.0:
+            base_clip = base_clip.set_opacity(self.opacity)
+        clips.append(base_clip)
+
+        # 2) Highlight layers: accumulated words overlay on top
         h_style = style.copy()
         h_style['color'] = highlight_color
+        h_style['stroke_color'] = None  # no double stroke
 
         for i in range(len(words)):
             word_start = start_time + i * time_per_word
-            word_dur = time_per_word
+            # Each highlight layer stays until end of subtitle
+            remaining = duration - i * time_per_word
 
-            if word_dur <= 0:
+            if remaining <= 0:
                 continue
 
-            # Show words 0..i accumulated in highlight color
-            accumulated_text = ' '.join(words[:i + 1])
-            clip = self._make_text_clip(accumulated_text, h_style)
-
-            x_pos = self._get_x_pos(clip.w, position)
-            y_pos = self._get_y_pos(clip.h, position)
-            clip = clip.set_position((x_pos, y_pos))
-            clip = clip.set_start(word_start)
-            clip = clip.set_duration(word_dur)
+            accumulated = ' '.join(words[:i + 1])
+            h_clip = self._make_text_clip(accumulated, h_style)
+            # Same position as base — text wraps identically with same width
+            h_clip = h_clip.set_position((x_pos, y_pos))
+            h_clip = h_clip.set_start(word_start)
+            h_clip = h_clip.set_duration(remaining)
 
             if self.opacity < 1.0:
-                clip = clip.set_opacity(self.opacity)
+                h_clip = h_clip.set_opacity(self.opacity)
 
-            clips.append(clip)
+            clips.append(h_clip)
 
         return clips
 
