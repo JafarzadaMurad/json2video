@@ -416,25 +416,41 @@ class SubtitlesElement(BaseElement):
         return clip
 
     def _anim_bounce(self, clip, start_time, duration, params):
-        """Bounce-in animation: subtitle pops in with elastic bounce."""
+        """Bounce-in animation: subtitle pops in-place with subtle bounce."""
         bounce_dur = params.get('duration', 0.3)
         bounce_dur = min(bounce_dur, duration * 0.5)
 
+        orig_w, orig_h = clip.size
+        orig_pos = clip.pos  # position function
+
         def bounce_scale(t):
-            """Scale function: 0→overshoot→settle at 1.0"""
+            """Scale: 0.8 → 1.08 overshoot → 1.0 settle"""
             if t >= bounce_dur:
                 return 1.0
             progress = t / bounce_dur
-            # Ease-out bounce: quick scale up with overshoot
-            if progress < 0.6:
-                # Fast scale up to 1.15
-                return 0.3 + (1.15 - 0.3) * (progress / 0.6)
+            if progress < 0.5:
+                # Scale up from 0.8 to 1.08
+                return 0.8 + (1.08 - 0.8) * (progress / 0.5)
             else:
-                # Settle from 1.15 back to 1.0
-                settle = (progress - 0.6) / 0.4
-                return 1.15 - 0.15 * settle
+                # Settle from 1.08 to 1.0
+                settle = (progress - 0.5) / 0.5
+                return 1.08 - 0.08 * settle
+
+        def centered_pos(t):
+            """Adjust position to keep clip centered during scale."""
+            scale = bounce_scale(t)
+            # Get original position
+            if callable(orig_pos):
+                ox, oy = orig_pos(t)
+            else:
+                ox, oy = orig_pos
+            # Compensate: shift by half the size difference
+            dx = (orig_w * (1 - scale)) / 2
+            dy = (orig_h * (1 - scale)) / 2
+            return (ox + dx, oy + dy)
 
         clip = clip.resize(lambda t: bounce_scale(t))
+        clip = clip.set_position(centered_pos)
         return clip
 
     def _anim_word_by_word(self, text, style, position, start_time, duration, params):
