@@ -489,7 +489,7 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=12))
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
 
         # Force alpha: any pixel with alpha > 10 becomes fully visible
         r, g, b, a = glow_img.split()
