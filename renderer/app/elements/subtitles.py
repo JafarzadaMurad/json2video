@@ -489,7 +489,7 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=2))
 
         # Force alpha: any pixel with alpha > 10 becomes fully visible
         r, g, b, a = glow_img.split()
@@ -500,7 +500,7 @@ class SubtitlesElement(BaseElement):
         # ── 2) Sharp text with thick black stroke ──
         main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         main_draw = ImageDraw.Draw(main_img)
-        thick_stroke = max(stroke_width, 3)
+        thick_stroke = max(stroke_width, 8)
 
         y = padding
         for line in lines:
