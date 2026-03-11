@@ -373,28 +373,28 @@ class SubtitlesElement(BaseElement):
         # ── word-by-word: each word appears one at a time ──
         if anim_type == 'word-by-word':
             if highlight_color:
-                # Word-by-word with color = highlight effect
                 merged = {**anim_params, 'highlight-color': highlight_color}
                 return self._anim_highlight(text, style, position, start_time, duration, merged)
             return self._anim_word_by_word(text, style, position, start_time, duration, anim_params)
 
-        # ── highlight: text appears, words get highlighted sequentially ──
+        # ── highlight: karaoke word-by-word color change ──
         if anim_type == 'highlight':
             if highlight_color:
                 anim_params = {**anim_params, 'highlight-color': highlight_color}
             return self._anim_highlight(text, style, position, start_time, duration, anim_params)
 
-        # ── Standard clip (no word animation) ──
+        # ── Build the text clip ──
         if clip is None:
-            # If highlight-color set but no word animation, render colored text
             if highlight_color:
-                eff_style = style.copy()
-                eff_style['color'] = highlight_color
-                clip = self._make_text_clip(text, eff_style)
+                # Styled rendering: random word highlighted + glow on all
+                img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
+                clip = ImageClip(np.array(img))
+                x_pos = self._get_x_pos(img.width, position)
+                y_pos = self._get_y_pos(img.height, position)
             else:
                 clip = self._make_text_clip(text, style)
-            x_pos = self._get_x_pos(clip.w, position)
-            y_pos = self._get_y_pos(clip.h, position)
+                x_pos = self._get_x_pos(clip.w, position)
+                y_pos = self._get_y_pos(clip.h, position)
             clip = clip.set_position((x_pos, y_pos))
             clip = clip.set_start(start_time)
             clip = clip.set_duration(duration)
@@ -414,6 +414,97 @@ class SubtitlesElement(BaseElement):
             return self._anim_bounce(clip, start_time, duration, anim_params)
 
         return clip
+
+    def _render_styled_subtitle(self, text, style, highlight_color, entry_index):
+        """Render subtitle with random highlighted word, glow, and stroke using Pillow."""
+        import random
+        from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+        words = text.split()
+        if not words:
+            words = [text]
+
+        # Pick 1 random word to highlight (deterministic per entry for consistency)
+        rng = random.Random(entry_index * 7 + len(text))
+        highlight_idx = rng.randint(0, len(words) - 1)
+
+        font_path = style['font']
+        if style['bold'] and 'Bold' not in font_path:
+            bold_path = font_path.replace('.ttf', '-Bold.ttf')
+            if os.path.exists(bold_path):
+                font_path = bold_path
+
+        font = ImageFont.truetype(font_path, style['font_size'])
+        max_width = self.resolution[0] - 100
+        base_color = style['color']
+        stroke_color = style.get('stroke_color') or '#000000'
+        stroke_width = style.get('stroke_width', 2)
+
+        # Word-wrap layout
+        lines = []
+        current_line = []
+        current_width = 0
+        space_w = font.getlength(' ')
+
+        for idx, word in enumerate(words):
+            w = font.getlength(word)
+            needed = w + (space_w if current_line else 0)
+            if current_line and current_width + needed > max_width:
+                lines.append(current_line)
+                current_line = [(word, idx)]
+                current_width = w
+            else:
+                current_line.append((word, idx))
+                current_width += needed
+        if current_line:
+            lines.append(current_line)
+
+        # Image dimensions
+        line_height = int(font.size * 1.4)
+        glow_pad = 20  # extra padding for glow blur
+        padding = stroke_width + glow_pad
+        img_h = len(lines) * line_height + padding * 2
+        img_w = max_width + glow_pad * 2
+
+        # ── 1) Glow layer: draw text in highlight color, then blur ──
+        glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow_img)
+
+        y = padding
+        for line in lines:
+            line_text = ' '.join(w for w, _ in line)
+            total_w = font.getlength(line_text)
+            x = (img_w - total_w) / 2
+
+            for word, idx in line:
+                color = highlight_color if idx == highlight_idx else base_color
+                glow_draw.text((x, y), word, font=font, fill=color)
+                x += font.getlength(word + ' ')
+            y += line_height
+
+        # Blur for glow effect
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=8))
+
+        # ── 2) Main text layer: sharp text with stroke ──
+        main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        main_draw = ImageDraw.Draw(main_img)
+
+        y = padding
+        for line in lines:
+            line_text = ' '.join(w for w, _ in line)
+            total_w = font.getlength(line_text)
+            x = (img_w - total_w) / 2
+
+            for word, idx in line:
+                color = highlight_color if idx == highlight_idx else base_color
+                main_draw.text((x, y), word, font=font, fill=color,
+                               stroke_width=stroke_width, stroke_fill=stroke_color)
+                x += font.getlength(word + ' ')
+            y += line_height
+
+        # ── 3) Composite: glow behind, sharp text on top ──
+        result = Image.alpha_composite(glow_img, main_img)
+        return result
 
     def _anim_bounce(self, clip, start_time, duration, params):
         """Bounce-in animation: subtitle pops in-place with subtle bounce."""
