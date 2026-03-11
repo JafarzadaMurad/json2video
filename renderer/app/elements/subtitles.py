@@ -384,41 +384,115 @@ class SubtitlesElement(BaseElement):
         return clip
 
     def _anim_word_by_word(self, text, style, position, start_time, duration, params):
-        """Words appear one at a time, accumulating on screen."""
+        """Words appear one at a time, each fading in independently."""
         words = text.split()
         if not words:
             return []
 
+        from PIL import ImageFont
+
+        font_path = style['font']
+        if style['bold'] and 'Bold' not in font_path:
+            bold_path = font_path.replace('.ttf', '-Bold.ttf')
+            if os.path.exists(bold_path):
+                font_path = bold_path
+
+        font = ImageFont.truetype(font_path, style['font_size'])
+        max_width = self.resolution[0] - 100
+
+        # Calculate position of each word (with word wrap)
+        word_positions = self._calculate_word_positions(words, font, max_width)
+
         clips = []
         time_per_word = duration / len(words)
-        fade_in = params.get('fade', 0.15)
+        fade_in = params.get('fade', 0)
 
-        for i in range(len(words)):
-            # Show accumulated words up to this point
-            partial_text = ' '.join(words[:i + 1])
-            word_clip = self._make_text_clip(partial_text, style)
+        # Get bounding box of full text for centering
+        all_rights = [wp['x'] + wp['w'] for wp in word_positions]
+        all_bottoms = [wp['y'] + wp['h'] for wp in word_positions]
+        total_w = max(all_rights) if all_rights else max_width
+        total_h = max(all_bottoms) if all_bottoms else style['font_size']
 
-            x_pos = self._get_x_pos(word_clip.w, position)
+        base_x = self._get_x_pos(total_w, position)
+        base_y = self._get_y_pos(total_h, position)
+
+        for i, wp in enumerate(word_positions):
             word_start = start_time + i * time_per_word
-
-            # Duration: from this word's appearance to end of subtitle
-            word_dur = duration - i * time_per_word
-            if word_dur <= 0:
+            remaining = duration - i * time_per_word
+            if remaining <= 0:
                 continue
 
-            word_clip = word_clip.set_position((x_pos, self._get_y_pos(word_clip.h, position)))
-            word_clip = word_clip.set_start(word_start)
-            word_clip = word_clip.set_duration(min(time_per_word, word_dur))
+            # Render single word as image
+            word_img = self._render_single_word(words[i], style, font)
+            clip = ImageClip(np.array(word_img)).set_duration(remaining)
+
+            # Position: base offset + word's position within text block
+            clip = clip.set_position((base_x + wp['x'], base_y + wp['y']))
+            clip = clip.set_start(word_start)
 
             if fade_in > 0:
-                word_clip = word_clip.crossfadein(min(fade_in, time_per_word / 2))
+                clip = clip.crossfadein(min(fade_in, time_per_word / 2))
 
             if self.opacity < 1.0:
-                word_clip = word_clip.set_opacity(self.opacity)
+                clip = clip.set_opacity(self.opacity)
 
-            clips.append(word_clip)
+            clips.append(clip)
 
         return clips
+
+    def _calculate_word_positions(self, words, font, max_width):
+        """Calculate (x, y, w, h) for each word with word-wrap."""
+        positions = []
+        x = 0
+        y = 0
+        space_w = font.getlength(' ')
+        line_height = int(font.size * 1.4)
+
+        for word in words:
+            w = font.getlength(word)
+            if x > 0 and x + space_w + w > max_width:
+                # Wrap to next line
+                x = 0
+                y += line_height
+
+            positions.append({'x': int(x), 'y': int(y), 'w': int(w), 'h': line_height})
+            x += w + space_w
+
+        # Center each line
+        if positions:
+            lines = {}
+            for p in positions:
+                lines.setdefault(p['y'], []).append(p)
+
+            for y_val, line_words in lines.items():
+                line_right = max(wp['x'] + wp['w'] for wp in line_words)
+                offset = (max_width - line_right) // 2
+                for wp in line_words:
+                    wp['x'] += offset
+
+        return positions
+
+    def _render_single_word(self, word, style, font):
+        """Render a single word as a Pillow RGBA image."""
+        from PIL import Image, ImageDraw
+
+        stroke_color = style.get('stroke_color')
+        stroke_width = style.get('stroke_width', 2) if stroke_color else 0
+        padding = stroke_width + 4
+
+        w = int(font.getlength(word)) + padding * 2
+        h = int(font.size * 1.4) + padding * 2
+
+        img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        if stroke_color and stroke_width > 0:
+            draw.text((padding, padding), word, font=font, fill=style['color'],
+                      stroke_width=stroke_width, stroke_fill=stroke_color)
+        else:
+            draw.text((padding, padding), word, font=font, fill=style['color'])
+
+        return img
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
         """True karaoke: single image per frame, words progressively change color."""
