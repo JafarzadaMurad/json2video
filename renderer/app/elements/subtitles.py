@@ -472,30 +472,10 @@ class SubtitlesElement(BaseElement):
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # ── 1) Dark text-shadow on ALL words ──
-        #    Like CSS: text-shadow: 2px 2px 4px rgba(0,0,0,0.8)
-        shadow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        shadow_draw = ImageDraw.Draw(shadow_img)
-        shadow_offset = 2
-
-        y = padding
-        for line in lines:
-            line_text = ' '.join(w for w, _ in line)
-            total_w = font.getlength(line_text)
-            x = (img_w - total_w) / 2
-            for word, idx in line:
-                shadow_draw.text((x + shadow_offset, y + shadow_offset), word,
-                                 font=font, fill=(0, 0, 0, 200))
-                x += font.getlength(word + ' ')
-            y += line_height
-
-        shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(radius=3))
-        result = Image.alpha_composite(result, shadow_img)
-
-        # ── 2) Glow ONLY on highlighted word ──
-        #    Like CSS: text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00
+        # ── 1) Glow ONLY on highlighted word — FULLY OPAQUE ──
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
+        glow_stroke = 8  # thick blob for strong glow
 
         y = padding
         for line in lines:
@@ -504,22 +484,23 @@ class SubtitlesElement(BaseElement):
             x = (img_w - total_w) / 2
             for word, idx in line:
                 if idx == highlight_idx:
-                    # Inner glow (10px)
                     glow_draw.text((x, y), word, font=font, fill=highlight_color,
-                                   stroke_width=3, stroke_fill=highlight_color)
+                                   stroke_width=glow_stroke, stroke_fill=highlight_color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        # Two glow passes like CSS double text-shadow
-        glow_inner = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
-        glow_outer = glow_img.filter(ImageFilter.GaussianBlur(radius=10))
-        result = Image.alpha_composite(result, glow_outer)
-        result = Image.alpha_composite(result, glow_inner)
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=12))
 
-        # ── 3) Sharp text with thick black stroke ──
+        # Force alpha: any pixel with alpha > 10 becomes fully visible
+        r, g, b, a = glow_img.split()
+        a = a.point(lambda p: min(255, p * 6) if p > 10 else 0)
+        glow_img = Image.merge('RGBA', (r, g, b, a))
+        result = Image.alpha_composite(result, glow_img)
+
+        # ── 2) Sharp text with thick black stroke ──
         main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         main_draw = ImageDraw.Draw(main_img)
-        thick_stroke = max(stroke_width, 3)  # minimum 3px black outline
+        thick_stroke = max(stroke_width, 3)
 
         y = padding
         for line in lines:
