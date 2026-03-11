@@ -12,7 +12,7 @@ import logging
 import os
 import re
 
-from moviepy.editor import TextClip, CompositeVideoClip, ColorClip, concatenate_videoclips
+from moviepy.editor import TextClip, CompositeVideoClip, ColorClip, ImageClip, concatenate_videoclips
 import numpy as np
 
 from app.elements.base import BaseElement
@@ -322,7 +322,7 @@ class SubtitlesElement(BaseElement):
         return clips
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
-        """True karaoke: full text in base color, words progressively turn highlight color."""
+        """True karaoke: single image per frame, words progressively change color."""
         words = text.split()
         if not words:
             return []
@@ -331,43 +331,99 @@ class SubtitlesElement(BaseElement):
         clips = []
         time_per_word = duration / len(words)
 
-        # 1) Base layer: full text in base color for entire subtitle duration
-        base_clip = self._make_text_clip(text, style)
-        x_pos = self._get_x_pos(base_clip.w, position)
-        y_pos = self._get_y_pos(base_clip.h, position)
-        base_clip = base_clip.set_position((x_pos, y_pos))
-        base_clip = base_clip.set_start(start_time)
-        base_clip = base_clip.set_duration(duration)
-        if self.opacity < 1.0:
-            base_clip = base_clip.set_opacity(self.opacity)
-        clips.append(base_clip)
-
-        # 2) Highlight layers: accumulated words overlay on top
-        h_style = style.copy()
-        h_style['color'] = highlight_color
-        h_style['stroke_color'] = None  # no double stroke
-
         for i in range(len(words)):
             word_start = start_time + i * time_per_word
-            # Each highlight layer stays until end of subtitle
             remaining = duration - i * time_per_word
-
             if remaining <= 0:
                 continue
 
-            accumulated = ' '.join(words[:i + 1])
-            h_clip = self._make_text_clip(accumulated, h_style)
-            # Same position as base — text wraps identically with same width
-            h_clip = h_clip.set_position((x_pos, y_pos))
-            h_clip = h_clip.set_start(word_start)
-            h_clip = h_clip.set_duration(remaining)
+            # Render single image: words 0..i in highlight_color, rest in base color
+            img = self._render_karaoke_image(words, i + 1, style, highlight_color)
+            clip = ImageClip(np.array(img)).set_duration(remaining)
+
+            x_pos = self._get_x_pos(img.width, position)
+            y_pos = self._get_y_pos(img.height, position)
+            clip = clip.set_position((x_pos, y_pos))
+            clip = clip.set_start(word_start)
 
             if self.opacity < 1.0:
-                h_clip = h_clip.set_opacity(self.opacity)
+                clip = clip.set_opacity(self.opacity)
 
-            clips.append(h_clip)
+            clips.append(clip)
 
         return clips
+
+    def _render_karaoke_image(self, words, highlight_count, style, highlight_color):
+        """Render text image with per-word coloring using Pillow."""
+        from PIL import Image, ImageDraw, ImageFont
+
+        font_path = style['font']
+        if style['bold'] and 'Bold' not in font_path:
+            bold_path = font_path.replace('.ttf', '-Bold.ttf')
+            import os as _os
+            if _os.path.exists(bold_path):
+                font_path = bold_path
+
+        font_size = style['font_size']
+        font = ImageFont.truetype(font_path, font_size)
+        max_width = self.resolution[0] - 100
+        base_color = style['color']
+        stroke_color = style.get('stroke_color')
+        stroke_width = style.get('stroke_width', 2) if stroke_color else 0
+
+        # Word-wrap: split words into lines
+        lines = []  # each line: list of (word, is_highlighted)
+        current_line = []
+        current_width = 0
+        space_width = font.getlength(' ')
+
+        for idx, word in enumerate(words):
+            word_width = font.getlength(word)
+            needed = word_width + (space_width if current_line else 0)
+
+            if current_line and current_width + needed > max_width:
+                lines.append(current_line)
+                current_line = [(word, idx < highlight_count)]
+                current_width = word_width
+            else:
+                current_line.append((word, idx < highlight_count))
+                current_width += needed
+
+        if current_line:
+            lines.append(current_line)
+
+        # Calculate image dimensions
+        line_height = int(font_size * 1.4)
+        padding = stroke_width + 2
+        img_height = len(lines) * line_height + padding * 2
+        img_width = max_width
+
+        # Create transparent image
+        img = Image.new('RGBA', (img_width, img_height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+
+        # Center each line horizontally
+        y = padding
+        for line in lines:
+            # Calculate total line width
+            line_text = ' '.join(w for w, _ in line)
+            total_width = font.getlength(line_text)
+            x = (img_width - total_width) / 2  # center
+
+            for word, is_highlighted in line:
+                color = highlight_color if is_highlighted else base_color
+
+                if stroke_color and stroke_width > 0:
+                    draw.text((x, y), word, font=font, fill=color,
+                              stroke_width=stroke_width, stroke_fill=stroke_color)
+                else:
+                    draw.text((x, y), word, font=font, fill=color)
+
+                x += font.getlength(word + ' ')
+
+            y += line_height
+
+        return img
 
     def _make_text_clip(self, text, style):
         """Create a single TextClip with the given style, optionally with stroke."""
