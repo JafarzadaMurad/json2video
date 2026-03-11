@@ -384,50 +384,30 @@ class SubtitlesElement(BaseElement):
         return clip
 
     def _anim_word_by_word(self, text, style, position, start_time, duration, params):
-        """Words appear one at a time, each fading in independently."""
+        """Words appear one at a time. Full text rendered, future words invisible."""
         words = text.split()
         if not words:
             return []
-
-        from PIL import ImageFont
-
-        font_path = style['font']
-        if style['bold'] and 'Bold' not in font_path:
-            bold_path = font_path.replace('.ttf', '-Bold.ttf')
-            if os.path.exists(bold_path):
-                font_path = bold_path
-
-        font = ImageFont.truetype(font_path, style['font_size'])
-        max_width = self.resolution[0] - 100
-
-        # Calculate position of each word (with word wrap)
-        word_positions = self._calculate_word_positions(words, font, max_width)
 
         clips = []
         time_per_word = duration / len(words)
         fade_in = params.get('fade', 0)
 
-        # Get bounding box of full text for centering
-        all_rights = [wp['x'] + wp['w'] for wp in word_positions]
-        all_bottoms = [wp['y'] + wp['h'] for wp in word_positions]
-        total_w = max(all_rights) if all_rights else max_width
-        total_h = max(all_bottoms) if all_bottoms else style['font_size']
+        # Render first frame to get dimensions for positioning
+        first_img = self._render_word_visibility_image(words, 1, style)
+        x_pos = self._get_x_pos(first_img.width, position)
+        y_pos = self._get_y_pos(first_img.height, position)
 
-        base_x = self._get_x_pos(total_w, position)
-        base_y = self._get_y_pos(total_h, position)
-
-        for i, wp in enumerate(word_positions):
+        for i in range(len(words)):
             word_start = start_time + i * time_per_word
             remaining = duration - i * time_per_word
             if remaining <= 0:
                 continue
 
-            # Render single word as image
-            word_img = self._render_single_word(words[i], style, font)
-            clip = ImageClip(np.array(word_img)).set_duration(remaining)
-
-            # Position: base offset + word's position within text block
-            clip = clip.set_position((base_x + wp['x'], base_y + wp['y']))
+            # Render full text with words 0..i visible, rest transparent
+            img = self._render_word_visibility_image(words, i + 1, style)
+            clip = ImageClip(np.array(img)).set_duration(remaining)
+            clip = clip.set_position((x_pos, y_pos))
             clip = clip.set_start(word_start)
 
             if fade_in > 0:
@@ -440,57 +420,73 @@ class SubtitlesElement(BaseElement):
 
         return clips
 
-    def _calculate_word_positions(self, words, font, max_width):
-        """Calculate (x, y, w, h) for each word with word-wrap."""
-        positions = []
-        x = 0
-        y = 0
-        space_w = font.getlength(' ')
-        line_height = int(font.size * 1.4)
+    def _render_word_visibility_image(self, words, visible_count, style):
+        """Render full text where first N words are visible, rest are transparent."""
+        from PIL import Image, ImageDraw, ImageFont
 
-        for word in words:
-            w = font.getlength(word)
-            if x > 0 and x + space_w + w > max_width:
-                # Wrap to next line
-                x = 0
-                y += line_height
+        font_path = style['font']
+        if style['bold'] and 'Bold' not in font_path:
+            bold_path = font_path.replace('.ttf', '-Bold.ttf')
+            if os.path.exists(bold_path):
+                font_path = bold_path
 
-            positions.append({'x': int(x), 'y': int(y), 'w': int(w), 'h': line_height})
-            x += w + space_w
-
-        # Center each line
-        if positions:
-            lines = {}
-            for p in positions:
-                lines.setdefault(p['y'], []).append(p)
-
-            for y_val, line_words in lines.items():
-                line_right = max(wp['x'] + wp['w'] for wp in line_words)
-                offset = (max_width - line_right) // 2
-                for wp in line_words:
-                    wp['x'] += offset
-
-        return positions
-
-    def _render_single_word(self, word, style, font):
-        """Render a single word as a Pillow RGBA image."""
-        from PIL import Image, ImageDraw
-
+        font = ImageFont.truetype(font_path, style['font_size'])
+        max_width = self.resolution[0] - 100
+        base_color = style['color']
         stroke_color = style.get('stroke_color')
         stroke_width = style.get('stroke_width', 2) if stroke_color else 0
-        padding = stroke_width + 4
 
-        w = int(font.getlength(word)) + padding * 2
-        h = int(font.size * 1.4) + padding * 2
+        # Word-wrap layout
+        lines = []
+        current_line = []
+        current_width = 0
+        space_w = font.getlength(' ')
 
-        img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        for idx, word in enumerate(words):
+            w = font.getlength(word)
+            needed = w + (space_w if current_line else 0)
+            if current_line and current_width + needed > max_width:
+                lines.append(current_line)
+                current_line = [(word, idx)]
+                current_width = w
+            else:
+                current_line.append((word, idx))
+                current_width += needed
+        if current_line:
+            lines.append(current_line)
+
+        # Image dimensions
+        line_height = int(font.size * 1.4)
+        padding = stroke_width + 2
+        img_h = len(lines) * line_height + padding * 2
+        img_w = max_width
+
+        img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
 
-        if stroke_color and stroke_width > 0:
-            draw.text((padding, padding), word, font=font, fill=style['color'],
-                      stroke_width=stroke_width, stroke_fill=stroke_color)
-        else:
-            draw.text((padding, padding), word, font=font, fill=style['color'])
+        y = padding
+        for line in lines:
+            line_text = ' '.join(w for w, _ in line)
+            total_w = font.getlength(line_text)
+            x = (img_w - total_w) / 2  # center
+
+            for word, idx in line:
+                # Visible if word index < visible_count, else fully transparent
+                if idx < visible_count:
+                    color = base_color
+                    s_color = stroke_color
+                else:
+                    color = (0, 0, 0, 0)  # transparent
+                    s_color = None
+
+                if s_color and stroke_width > 0:
+                    draw.text((x, y), word, font=font, fill=color,
+                              stroke_width=stroke_width, stroke_fill=s_color)
+                else:
+                    draw.text((x, y), word, font=font, fill=color)
+
+                x += font.getlength(word + ' ')
+            y += line_height
 
         return img
 
