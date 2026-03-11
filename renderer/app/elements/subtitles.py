@@ -322,7 +322,7 @@ class SubtitlesElement(BaseElement):
         return clips
 
     def _anim_highlight(self, text, style, position, start_time, duration, params):
-        """Karaoke effect: all text in base color, current word highlighted."""
+        """Karaoke effect: words progressively change to highlight color as they're 'read'."""
         words = text.split()
         if not words:
             return []
@@ -331,46 +331,46 @@ class SubtitlesElement(BaseElement):
         clips = []
         time_per_word = duration / len(words)
 
-        for i, word in enumerate(words):
+        for i in range(len(words)):
             word_start = start_time + i * time_per_word
             word_dur = time_per_word
 
             if word_dur <= 0:
                 continue
 
-            # Build text where current word is highlighted:
-            # Replace the current word with highlighted version by building
-            # the full text with all words in base color (shown as background)
-            base_clip = self._make_text_clip(text, style)
-            x_pos = self._get_x_pos(base_clip.w, position)
-            y_pos = self._get_y_pos(base_clip.h, position)
-            base_clip = base_clip.set_position((x_pos, y_pos))
-            base_clip = base_clip.set_start(word_start)
-            base_clip = base_clip.set_duration(word_dur)
+            # Build full text in highlight color (for words 0..i)
+            # and full text in base color (for words i+1..end)
+            # The trick: render highlighted portion as accumulated text clip
 
-            # Build highlighted version: same full text but with highlight color
-            # We use a trick: render text where non-active words are invisible
-            # by replacing them with spaces to maintain positioning
-            before_spaces = ' ' * len(' '.join(words[:i])) + (' ' if i > 0 else '')
-            after_spaces = (' ' if i < len(words) - 1 else '') + ' ' * len(' '.join(words[i+1:]))
-            highlighted_text = before_spaces + words[i] + after_spaces
+            highlighted_words = ' '.join(words[:i + 1])
+            remaining_words = ' '.join(words[i + 1:]) if i < len(words) - 1 else ''
 
-            highlight_style = style.copy()
-            highlight_style['color'] = highlight_color
-            # Remove stroke from highlight layer to avoid double stroke
-            highlight_style['stroke_color'] = None
-
-            h_clip = self._make_text_clip(highlighted_text, highlight_style)
+            # Render highlighted portion (already "read" words)
+            h_style = style.copy()
+            h_style['color'] = highlight_color
+            h_clip = self._make_text_clip(highlighted_words, h_style)
+            x_pos = self._get_x_pos(h_clip.w, position)
+            y_pos = self._get_y_pos(h_clip.h, position)
             h_clip = h_clip.set_position((x_pos, y_pos))
             h_clip = h_clip.set_start(word_start)
             h_clip = h_clip.set_duration(word_dur)
 
-            if self.opacity < 1.0:
-                base_clip = base_clip.set_opacity(self.opacity)
-                h_clip = h_clip.set_opacity(self.opacity)
-
-            clips.append(base_clip)
             clips.append(h_clip)
+
+            # Render remaining portion (upcoming words) below/after
+            if remaining_words:
+                r_clip = self._make_text_clip(remaining_words, style)
+                # Position below the highlighted text
+                r_y = y_pos + h_clip.h + 5
+                r_x = self._get_x_pos(r_clip.w, position)
+                r_clip = r_clip.set_position((r_x, r_y))
+                r_clip = r_clip.set_start(word_start)
+                r_clip = r_clip.set_duration(word_dur)
+                clips.append(r_clip)
+
+            if self.opacity < 1.0:
+                for c in clips[-2:]:
+                    c = c.set_opacity(self.opacity)
 
         return clips
 
