@@ -391,7 +391,11 @@ class SubtitlesElement(BaseElement):
             if highlight_color:
                 # Styled rendering: random word highlighted + glow on all
                 img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                clip = ImageClip(np.array(img))
+                img_array = np.array(img)
+                # MoviePy needs explicit mask for alpha channel
+                clip = ImageClip(img_array[:, :, :3])  # RGB only
+                mask = ImageClip(img_array[:, :, 3] / 255.0, ismask=True)
+                clip = clip.set_mask(mask)
                 x_pos = self._get_x_pos(img.width, position)
                 y_pos = self._get_y_pos(img.height, position)
             else:
