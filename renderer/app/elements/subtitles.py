@@ -480,9 +480,9 @@ class SubtitlesElement(BaseElement):
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
         # ── 1) Neon glow in text's own color ──
-        glow_spread = style.get('glow_spread', 10)
-        glow_blur = style.get('glow_blur', 6)
-        glow_opacity = style.get('glow_opacity', 100)
+        glow_spread = style.get('glow_spread', 20)   # EXTREME for testing
+        glow_blur = style.get('glow_blur', 10)
+        glow_opacity = style.get('glow_opacity', 200)
 
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
@@ -525,12 +525,9 @@ class SubtitlesElement(BaseElement):
 
         result = Image.alpha_composite(result, main_img)
 
-        # Debug: save to verify glow renders in Pillow
-        try:
-            result.save('/tmp/glow_debug.png')
-            logger.info('DEBUG: saved glow result to /tmp/glow_debug.png (size=%s)', result.size)
-        except Exception as e:
-            logger.warning('DEBUG: could not save glow debug: %s', e)
+        logger.info('GLOW_DEBUG: spread=%s blur=%s opacity=%s size=%sx%s alpha_nonzero=%s',
+                    glow_spread, glow_blur, glow_opacity, img_w, img_h,
+                    sum(1 for p in result.split()[3].getdata() if p > 0))
 
         return result
 
