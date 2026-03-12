@@ -473,9 +473,9 @@ class SubtitlesElement(BaseElement):
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
         # ── 1) Glow on ALL words ──
+        #    CSS equivalent: text-shadow: {color} 1px 0 10px
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
-        glow_stroke = 8  # thick blob for strong glow
 
         y = padding
         for line in lines:
@@ -484,16 +484,17 @@ class SubtitlesElement(BaseElement):
             x = (img_w - total_w) / 2
             for word, idx in line:
                 color = get_word_color(idx)
-                glow_draw.text((x, y), word, font=font, fill=color,
-                               stroke_width=glow_stroke, stroke_fill=color)
+                # 1px x-offset, no stroke — just the text shape for glow
+                glow_draw.text((x + 1, y), word, font=font, fill=color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=2))
+        # CSS blur 10px ≈ Pillow GaussianBlur radius 5
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
 
-        # Force alpha: any pixel with alpha > 10 becomes fully visible
+        # Soft alpha boost for natural glow
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(255, p * 4) if p > 10 else 0)
+        a = a.point(lambda p: min(255, p * 3) if p > 5 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
         result = Image.alpha_composite(result, glow_img)
 
