@@ -493,7 +493,7 @@ class SubtitlesElement(BaseElement):
 
         # Force alpha: any pixel with alpha > 10 becomes fully visible
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(255, p * 3) if p > 10 else 0)
+        a = a.point(lambda p: min(255, p * 4) if p > 10 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
         result = Image.alpha_composite(result, glow_img)
 
