@@ -177,6 +177,9 @@ class SubtitlesElement(BaseElement):
             'font': self.data.get('font', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
             'bold': self.data.get('bold', False),
             'highlight_color': self.data.get('highlight-color', None),
+            'glow_spread': self.data.get('glow-spread', 10),
+            'glow_blur': self.data.get('glow-blur', 6),
+            'glow_opacity': self.data.get('glow-opacity', 100),
         }
 
         # ─── Position ──────────────────────────────
@@ -473,6 +476,10 @@ class SubtitlesElement(BaseElement):
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
         # ── 1) Neon glow in text's own color ──
+        glow_spread = style.get('glow_spread', 10)
+        glow_blur = style.get('glow_blur', 6)
+        glow_opacity = style.get('glow_opacity', 100)
+
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
 
@@ -484,14 +491,14 @@ class SubtitlesElement(BaseElement):
             for word, idx in line:
                 color = get_word_color(idx)
                 glow_draw.text((x, y), word, font=font, fill=color,
-                               stroke_width=10, stroke_fill=color)
+                               stroke_width=glow_spread, stroke_fill=color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=6))
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(255, p * 2) if p > 5 else 0)
+        a = a.point(lambda p: min(glow_opacity, p) if p > 5 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
         result = Image.alpha_composite(result, glow_img)
 
