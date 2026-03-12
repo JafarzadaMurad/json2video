@@ -472,8 +472,7 @@ class SubtitlesElement(BaseElement):
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # ── 1) Glow on ALL words ──
-        #    Must extend beyond the black stroke (8px) to be visible
+        # ── 1) Neon glow in text's own color ──
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
 
@@ -485,21 +484,21 @@ class SubtitlesElement(BaseElement):
             for word, idx in line:
                 color = get_word_color(idx)
                 glow_draw.text((x, y), word, font=font, fill=color,
-                               stroke_width=12, stroke_fill=color)
+                               stroke_width=10, stroke_fill=color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=8))
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=6))
 
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(255, p * 5) if p > 5 else 0)
+        a = a.point(lambda p: min(255, p * 4) if p > 5 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
         result = Image.alpha_composite(result, glow_img)
 
         # ── 2) Sharp text with thick black stroke ──
         main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         main_draw = ImageDraw.Draw(main_img)
-        thick_stroke = max(stroke_width, 8)
+        thick_stroke = max(stroke_width, 3)  # thin outline so glow shows through
 
         y = padding
         for line in lines:
