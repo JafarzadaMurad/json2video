@@ -491,7 +491,7 @@ class SubtitlesElement(BaseElement):
         glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=6))
 
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(255, p * 4) if p > 5 else 0)
+        a = a.point(lambda p: min(255, p * 2) if p > 5 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
         result = Image.alpha_composite(result, glow_img)
 
