@@ -569,9 +569,6 @@ class SubtitlesElement(BaseElement):
             return (ox + dx, oy + dy)
 
         clip = clip.resize(lambda t: bounce_scale(t))
-        # Preserve mask through resize
-        if clip.mask is not None:
-            clip.mask = clip.mask.resize(clip.size)
         clip = clip.set_position(centered_pos)
         return clip
 
