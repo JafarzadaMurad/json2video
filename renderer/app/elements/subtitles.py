@@ -524,6 +524,14 @@ class SubtitlesElement(BaseElement):
             y += line_height
 
         result = Image.alpha_composite(result, main_img)
+
+        # Debug: save to verify glow renders in Pillow
+        try:
+            result.save('/tmp/glow_debug.png')
+            logger.info('DEBUG: saved glow result to /tmp/glow_debug.png (size=%s)', result.size)
+        except Exception as e:
+            logger.warning('DEBUG: could not save glow debug: %s', e)
+
         return result
 
     def _anim_bounce(self, clip, start_time, duration, params):
@@ -561,6 +569,9 @@ class SubtitlesElement(BaseElement):
             return (ox + dx, oy + dy)
 
         clip = clip.resize(lambda t: bounce_scale(t))
+        # Preserve mask through resize
+        if clip.mask is not None:
+            clip.mask = clip.mask.resize(clip.size)
         clip = clip.set_position(centered_pos)
         return clip
 
