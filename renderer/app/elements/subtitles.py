@@ -397,16 +397,18 @@ class SubtitlesElement(BaseElement):
                 
                 import tempfile
                 
-                # Glow clip: save RGB to temp file, load as opaque clip with set_opacity
-                glow_path = tempfile.mktemp(suffix='_glow.png')
-                glow_img.save(glow_path)
-                glow_clip = ImageClip(glow_path)
+                # Glow clip: use brightness as per-pixel mask (black=transparent, glow=visible)
+                glow_array = np.array(glow_img)  # RGB
+                glow_brightness = np.max(glow_array, axis=2).astype(np.float64) / 255.0
+                
+                glow_clip = ImageClip(glow_array)
+                glow_mask = ImageClip(glow_brightness, ismask=True)
+                glow_clip = glow_clip.set_mask(glow_mask)
                 x_pos = self._get_x_pos(glow_img.width, position)
                 y_pos = self._get_y_pos(glow_img.height, position)
                 glow_clip = glow_clip.set_position((x_pos, y_pos))
                 glow_clip = glow_clip.set_start(start_time)
                 glow_clip = glow_clip.set_duration(duration)
-                glow_clip = glow_clip.set_opacity(glow_opacity_val)
                 
                 # Text clip: save RGBA to temp file, load with transparency
                 text_path = tempfile.mktemp(suffix='_text.png')
