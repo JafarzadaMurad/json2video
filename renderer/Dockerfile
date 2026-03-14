@@ -14,14 +14,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Montserrat font from Google Fonts
+# Install Montserrat font
 RUN mkdir -p /usr/share/fonts/truetype/montserrat && \
-    wget -q -O /tmp/montserrat.zip "https://fonts.google.com/download?family=Montserrat" && \
-    unzip -o /tmp/montserrat.zip -d /tmp/montserrat && \
-    cp /tmp/montserrat/static/*.ttf /usr/share/fonts/truetype/montserrat/ 2>/dev/null || true && \
-    cp /tmp/montserrat/*.ttf /usr/share/fonts/truetype/montserrat/ 2>/dev/null || true && \
-    fc-cache -f -v && \
-    rm -rf /tmp/montserrat /tmp/montserrat.zip
+    wget -q -O /usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf \
+    "https://github.com/JulietaUla/Montserrat/raw/master/fonts/ttf/Montserrat-Black.ttf" && \
+    wget -q -O /usr/share/fonts/truetype/montserrat/Montserrat-Bold.ttf \
+    "https://github.com/JulietaUla/Montserrat/raw/master/fonts/ttf/Montserrat-Bold.ttf" && \
+    fc-cache -f -v
 
 # Fix ImageMagick security policy (allows MoviePy TextClip to work)
 RUN if [ -f /etc/ImageMagick-6/policy.xml ]; then \
