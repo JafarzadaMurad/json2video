@@ -12,6 +12,7 @@ logger = logging.getLogger('element.text')
 
 # Default font paths (inside the Docker container)
 DEFAULT_FONTS = [
+    '/usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
