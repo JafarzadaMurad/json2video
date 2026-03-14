@@ -182,6 +182,10 @@ class SubtitlesElement(BaseElement):
             'glow_opacity': self.data.get('glow-opacity', 200),
         }
 
+        logger.info('PARAM_DEBUG: glow_spread=%s glow_blur=%s glow_opacity=%s highlight=%s',
+                    style['glow_spread'], style['glow_blur'], style['glow_opacity'],
+                    style['highlight_color'])
+
         # ─── Position ──────────────────────────────
         position = self._resolve_position()
 
@@ -391,7 +395,7 @@ class SubtitlesElement(BaseElement):
             if highlight_color:
                 # Styled rendering: separate glow + text clips
                 glow_img, text_img, _ = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                glow_opacity_val = style.get('glow_opacity', 0.2)
+                glow_opacity_val = style.get('glow_opacity', 0.7)
                 if isinstance(glow_opacity_val, int) and glow_opacity_val > 1:
                     glow_opacity_val = glow_opacity_val / 255.0  # normalize 0-255 to 0.0-1.0
                 
@@ -401,6 +405,10 @@ class SubtitlesElement(BaseElement):
                 glow_array = np.array(glow_img)  # RGB
                 glow_brightness = np.max(glow_array, axis=2).astype(np.float64) / 255.0
                 glow_brightness *= glow_opacity_val  # Apply glow-opacity control
+                
+                logger.info('PARAM_DEBUG_CLIP: opacity_raw=%s opacity_final=%.3f brightness_max=%.3f brightness_nonzero=%d',
+                           style.get('glow_opacity'), glow_opacity_val,
+                           float(np.max(glow_brightness)), int(np.sum(glow_brightness > 0)))
                 
                 glow_clip = ImageClip(glow_array)
                 glow_mask = ImageClip(glow_brightness, ismask=True)
