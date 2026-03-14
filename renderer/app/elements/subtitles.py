@@ -391,7 +391,11 @@ class SubtitlesElement(BaseElement):
             if highlight_color:
                 # Styled rendering: glow + text baked into single image
                 img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                clip = ImageClip(np.array(img))
+                img_array = np.array(img)
+                # Explicitly split RGB and alpha — MoviePy may not auto-extract alpha
+                clip = ImageClip(img_array[:, :, :3])
+                alpha_mask = ImageClip(img_array[:, :, 3].astype(np.float64) / 255.0, ismask=True)
+                clip = clip.set_mask(alpha_mask)
                 x_pos = self._get_x_pos(img.width, position)
                 y_pos = self._get_y_pos(img.height, position)
             else:
@@ -531,9 +535,17 @@ class SubtitlesElement(BaseElement):
 
         result = Image.alpha_composite(result, text_layer)
 
-        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s alpha_nonzero=%s',
+        # Debug: count non-zero alpha pixels and save to file
+        alpha_data = result.split()[3].getdata()
+        nonzero_count = sum(1 for p in alpha_data if p > 0)
+        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s alpha_nonzero=%s max_alpha=%s',
                     glow_spread, glow_blur, img_w, img_h,
-                    sum(1 for p in result.split()[3].getdata() if p > 0))
+                    nonzero_count, max(alpha_data) if alpha_data else 0)
+        try:
+            result.save('/tmp/glow_debug.png')
+            logger.info('GLOW_DEBUG: saved /tmp/glow_debug.png')
+        except Exception as e:
+            logger.warning('GLOW_DEBUG: could not save debug image: %s', e)
 
         return result
 
