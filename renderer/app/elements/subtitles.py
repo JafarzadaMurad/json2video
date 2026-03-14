@@ -473,47 +473,48 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Glow layer: thick colored stroke + strong blur ──
+        # ── 1) Glow layer: mask-based per-color glow ──
         font_sz = style.get('font_size', 32)
         glow_spread = style.get('glow_spread') or max(int(font_sz / 3), 15)
         glow_blur = style.get('glow_blur', 20)
-
-        glow_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        glow_draw = ImageDraw.Draw(glow_layer)
-
-        y = padding
-        for line in lines:
-            line_text = ' '.join(w for w, _ in line)
-            total_w = font.getlength(line_text)
-            x = (img_w - total_w) / 2
-            for word, idx in line:
-                color = get_word_color(idx)
-                glow_draw.text((x, y), word, font=font, fill=color,
-                               stroke_width=glow_spread, stroke_fill=color)
-                x += font.getlength(word + ' ')
-            y += line_height
-
-        # Pre-multiply alpha before blur (prevents dark edges from RGBA blur)
-        glow_np = np.array(glow_layer, dtype=np.float64)
-        alpha_factor = glow_np[:, :, 3:4] / 255.0
-        glow_np[:, :, :3] *= alpha_factor
-        glow_layer = Image.fromarray(np.clip(glow_np, 0, 255).astype(np.uint8), 'RGBA')
-
-        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=glow_blur))
-
-        # Un-premultiply to recover true glow colors at all alpha levels
-        glow_np = np.array(glow_layer, dtype=np.float64)
-        alpha = glow_np[:, :, 3:4]
-        safe_alpha = np.where(alpha > 0, alpha / 255.0, 1.0)
-        glow_np[:, :, :3] = np.clip(glow_np[:, :, :3] / safe_alpha, 0, 255)
-
-        # Apply glow_opacity to control intensity
         glow_opacity_val = style.get('glow_opacity', 200)
-        glow_np[:, :, 3] = np.clip(glow_np[:, :, 3] * (glow_opacity_val / 255.0), 0, 255)
-        glow_layer = Image.fromarray(glow_np.astype(np.uint8), 'RGBA')
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        result = Image.alpha_composite(result, glow_layer)
+
+        # Collect unique glow colors
+        unique_colors = set(get_word_color(idx) for line in lines for _, idx in line)
+
+        for glow_hex in unique_colors:
+            # Draw grayscale mask for words of this color
+            mask = Image.new('L', (img_w, img_h), 0)
+            mask_draw = ImageDraw.Draw(mask)
+
+            y = padding
+            for line in lines:
+                line_text = ' '.join(w for w, _ in line)
+                total_w = font.getlength(line_text)
+                x = (img_w - total_w) / 2
+                for word, idx in line:
+                    if get_word_color(idx) == glow_hex:
+                        mask_draw.text((x, y), word, font=font, fill=255,
+                                       stroke_width=glow_spread, stroke_fill=255)
+                    x += font.getlength(word + ' ')
+                y += line_height
+
+            # Blur mask for soft glow spread
+            mask = mask.filter(ImageFilter.GaussianBlur(radius=glow_blur))
+
+            # Boost alpha so glow is clearly visible, cap at glow_opacity
+            mask = mask.point(lambda p: min(glow_opacity_val, p * 3))
+
+            # Create flat colored layer with blurred mask as alpha
+            cr = int(glow_hex.lstrip('#')[0:2], 16)
+            cg = int(glow_hex.lstrip('#')[2:4], 16)
+            cb = int(glow_hex.lstrip('#')[4:6], 16)
+            color_layer = Image.new('RGBA', (img_w, img_h), (cr, cg, cb, 0))
+            color_layer.putalpha(mask)
+
+            result = Image.alpha_composite(result, color_layer)
 
         # ── 2) Text layer on top ──
         text_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
