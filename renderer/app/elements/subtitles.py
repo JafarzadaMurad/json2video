@@ -288,10 +288,10 @@ class SubtitlesElement(BaseElement):
         if self.opacity < 1.0:
             clip = clip.set_opacity(self.opacity)
 
-        clip = self._apply_subtitle_animation(clip, text, style, position, animation, self.start, self.duration)
+        result = self._apply_subtitle_animation(clip, text, style, position, animation, self.start, self.duration)
 
         logger.info(f'Subtitles (inline): "{text[:40]}...", y={y_pos}')
-        return clip
+        return result
 
     def _render_subtitle_file(self, src, temp_dir, style, position, animation):
         """Render subtitle file (SRT or ASS) as multiple timed subtitle clips."""
@@ -389,15 +389,55 @@ class SubtitlesElement(BaseElement):
         # ── Build the text clip ──
         if clip is None:
             if highlight_color:
-                # Styled rendering: glow + text baked into single image
-                img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                img_array = np.array(img)
-                # Explicitly split RGB and alpha — MoviePy may not auto-extract alpha
-                clip = ImageClip(img_array[:, :, :3])
-                alpha_mask = ImageClip(img_array[:, :, 3].astype(np.float64) / 255.0, ismask=True)
-                clip = clip.set_mask(alpha_mask)
-                x_pos = self._get_x_pos(img.width, position)
-                y_pos = self._get_y_pos(img.height, position)
+                # Styled rendering: separate glow + text clips
+                glow_img, text_img, _ = self._render_styled_subtitle(text, style, highlight_color, entry_index)
+                glow_opacity_val = style.get('glow_opacity', 0.7)
+                if isinstance(glow_opacity_val, int) and glow_opacity_val > 1:
+                    glow_opacity_val = glow_opacity_val / 255.0  # normalize 0-255 to 0.0-1.0
+                
+                import tempfile
+                
+                # Glow clip: save RGB to temp file, load as opaque clip with set_opacity
+                glow_path = tempfile.mktemp(suffix='_glow.png')
+                glow_img.save(glow_path)
+                glow_clip = ImageClip(glow_path)
+                x_pos = self._get_x_pos(glow_img.width, position)
+                y_pos = self._get_y_pos(glow_img.height, position)
+                glow_clip = glow_clip.set_position((x_pos, y_pos))
+                glow_clip = glow_clip.set_start(start_time)
+                glow_clip = glow_clip.set_duration(duration)
+                glow_clip = glow_clip.set_opacity(glow_opacity_val)
+                
+                # Text clip: save RGBA to temp file, load with transparency
+                text_path = tempfile.mktemp(suffix='_text.png')
+                text_img.save(text_path)
+                text_clip = ImageClip(text_path, transparent=True)
+                text_clip = text_clip.set_position((x_pos, y_pos))
+                text_clip = text_clip.set_start(start_time)
+                text_clip = text_clip.set_duration(duration)
+                
+                if self.opacity < 1.0:
+                    glow_clip = glow_clip.set_opacity(glow_opacity_val * self.opacity)
+                    text_clip = text_clip.set_opacity(self.opacity)
+                
+                # Apply animation to both clips if needed
+                if anim_type == 'fade-in':
+                    fade_dur = anim_params.get('duration', 0.3) if isinstance(anim_params, dict) else 0.3
+                    glow_clip = glow_clip.crossfadein(fade_dur)
+                    text_clip = text_clip.crossfadein(fade_dur)
+                elif anim_type == 'fade-out':
+                    fade_dur = anim_params.get('duration', 0.3) if isinstance(anim_params, dict) else 0.3
+                    glow_clip = glow_clip.crossfadeout(fade_dur)
+                    text_clip = text_clip.crossfadeout(fade_dur)
+                elif anim_type == 'fade':
+                    fade_dur = anim_params.get('duration', 0.3) if isinstance(anim_params, dict) else 0.3
+                    glow_clip = glow_clip.crossfadein(fade_dur).crossfadeout(fade_dur)
+                    text_clip = text_clip.crossfadein(fade_dur).crossfadeout(fade_dur)
+                
+                logger.info('GLOW_CLIP: glow=%sx%s opacity=%.2f text=%sx%s pos=(%s,%s)',
+                           glow_clip.w, glow_clip.h, glow_opacity_val,
+                           text_clip.w, text_clip.h, x_pos, y_pos)
+                return [glow_clip, text_clip]
             else:
                 clip = self._make_text_clip(text, style)
                 x_pos = self._get_x_pos(clip.w, position)
@@ -423,7 +463,13 @@ class SubtitlesElement(BaseElement):
         return clip
 
     def _render_styled_subtitle(self, text, style, highlight_color, entry_index):
-        """Render subtitle with random highlighted word, neon glow, and stroke."""
+        """Render subtitle with random highlighted word, neon glow, and stroke.
+        
+        Returns (glow_img, text_img, highlight_idx) tuple:
+          - glow_img: RGB image with glow on black background (use with set_opacity)
+          - text_img: RGBA image with text + stroke
+          - highlight_idx: which word index was highlighted
+        """
         import random
         from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -477,17 +523,14 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Glow layer: mask-based glow for highlighted word only ──
+        # ── 1) Glow image: RGB on black background (no alpha needed) ──
         font_sz = style.get('font_size', 32)
         glow_spread = style.get('glow_spread') or max(int(font_sz / 3), 15)
         glow_blur = style.get('glow_blur', 20)
-        glow_opacity_val = style.get('glow_opacity', 255)
 
-        result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-
-        # Draw grayscale mask for highlighted word only
-        mask = Image.new('L', (img_w, img_h), 0)
-        mask_draw = ImageDraw.Draw(mask)
+        # Draw glow text on black background — the glow color will show through
+        glow_img = Image.new('RGB', (img_w, img_h), (0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow_img)
 
         y = padding
         for line in lines:
@@ -495,30 +538,18 @@ class SubtitlesElement(BaseElement):
             total_w = font.getlength(line_text)
             x = (img_w - total_w) / 2
             for word, idx in line:
-                if idx == highlight_idx:
-                    mask_draw.text((x, y), word, font=font, fill=255,
-                                   stroke_width=glow_spread, stroke_fill=255)
+                color = get_word_color(idx)
+                glow_draw.text((x, y), word, font=font, fill=color,
+                               stroke_width=glow_spread, stroke_fill=color)
                 x += font.getlength(word + ' ')
             y += line_height
 
-        # Blur mask for soft glow spread
-        mask = mask.filter(ImageFilter.GaussianBlur(radius=glow_blur))
+        # Blur for soft glow effect
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
-        # Boost alpha strongly so glow is clearly visible, cap at glow_opacity
-        mask = mask.point(lambda p: min(glow_opacity_val, p * 5))
-
-        # Create flat colored glow with blurred mask as alpha
-        cr = int(highlight_color.lstrip('#')[0:2], 16)
-        cg = int(highlight_color.lstrip('#')[2:4], 16)
-        cb = int(highlight_color.lstrip('#')[4:6], 16)
-        color_layer = Image.new('RGBA', (img_w, img_h), (cr, cg, cb, 0))
-        color_layer.putalpha(mask)
-
-        result = Image.alpha_composite(result, color_layer)
-
-        # ── 2) Text layer on top ──
-        text_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        text_draw = ImageDraw.Draw(text_layer)
+        # ── 2) Text image: RGBA with stroke ──
+        text_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        text_draw = ImageDraw.Draw(text_img)
         thick_stroke = max(stroke_width, 3)
 
         y = padding
@@ -533,21 +564,10 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        result = Image.alpha_composite(result, text_layer)
+        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s glow=RGB text=RGBA',
+                    glow_spread, glow_blur, img_w, img_h)
 
-        # Debug: count non-zero alpha pixels and save to file
-        alpha_data = result.split()[3].getdata()
-        nonzero_count = sum(1 for p in alpha_data if p > 0)
-        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s alpha_nonzero=%s max_alpha=%s',
-                    glow_spread, glow_blur, img_w, img_h,
-                    nonzero_count, max(alpha_data) if alpha_data else 0)
-        try:
-            result.save('/tmp/glow_debug.png')
-            logger.info('GLOW_DEBUG: saved /tmp/glow_debug.png')
-        except Exception as e:
-            logger.warning('GLOW_DEBUG: could not save debug image: %s', e)
-
-        return result
+        return glow_img, text_img, highlight_idx
 
     def _anim_bounce(self, clip, start_time, duration, params):
         """Bounce-in animation: subtitle pops in-place with subtle bounce."""
