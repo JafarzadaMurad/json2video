@@ -400,6 +400,7 @@ class SubtitlesElement(BaseElement):
                 # Glow clip: use brightness as per-pixel mask (black=transparent, glow=visible)
                 glow_array = np.array(glow_img)  # RGB
                 glow_brightness = np.max(glow_array, axis=2).astype(np.float64) / 255.0
+                glow_brightness *= glow_opacity_val  # Apply glow-opacity control
                 
                 glow_clip = ImageClip(glow_array)
                 glow_mask = ImageClip(glow_brightness, ismask=True)
