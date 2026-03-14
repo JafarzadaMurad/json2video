@@ -389,23 +389,11 @@ class SubtitlesElement(BaseElement):
         # ── Build the text clip ──
         if clip is None:
             if highlight_color:
-                # Styled rendering: glow + text as separate clips
-                glow_img, text_img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                glow_opacity_frac = style.get('glow_opacity', 150) / 255.0
-
-                # Glow clip: full alpha, opacity controlled by MoviePy
-                glow_clip = ImageClip(np.array(glow_img))
-                glow_clip = glow_clip.set_opacity(glow_opacity_frac)
-
-                # Text clip: full alpha
-                clip = ImageClip(np.array(text_img))
-
-                # Stack glow behind text
-                img_w, img_h = text_img.size
-                combined = CompositeVideoClip([glow_clip, clip], size=(img_w, img_h))
-                x_pos = self._get_x_pos(img_w, position)
-                y_pos = self._get_y_pos(img_h, position)
-                clip = combined
+                # Styled rendering: glow + text baked into single image
+                img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
+                clip = ImageClip(np.array(img))
+                x_pos = self._get_x_pos(img.width, position)
+                y_pos = self._get_y_pos(img.height, position)
             else:
                 clip = self._make_text_clip(text, style)
                 x_pos = self._get_x_pos(clip.w, position)
@@ -489,10 +477,9 @@ class SubtitlesElement(BaseElement):
         font_sz = style.get('font_size', 32)
         glow_spread = style.get('glow_spread') or max(int(font_sz / 3), 15)
         glow_blur = style.get('glow_blur', 20)
-        # glow_opacity handled by caller via set_opacity()
 
-        glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        glow_draw = ImageDraw.Draw(glow_img)
+        glow_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow_layer)
 
         y = padding
         for line in lines:
@@ -506,16 +493,19 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=glow_blur))
+        glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
-        # Force full alpha for any visible glow pixel (binary: 255 or 0)
-        r, g, b, a = glow_img.split()
-        a = a.point(lambda p: 255 if p > 5 else 0)
-        glow_img = Image.merge('RGBA', (r, g, b, a))
+        # Binary alpha: same as word-by-word (255 or 0, no semi-transparent)
+        r, g, b, a = glow_layer.split()
+        a = a.point(lambda p: 255 if p > 3 else 0)
+        glow_layer = Image.merge('RGBA', (r, g, b, a))
 
-        # ── 2) Text layer: sharp text with black stroke, full alpha ──
-        text_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        text_draw = ImageDraw.Draw(text_img)
+        result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        result = Image.alpha_composite(result, glow_layer)
+
+        # ── 2) Text layer on top ──
+        text_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        text_draw = ImageDraw.Draw(text_layer)
         thick_stroke = max(stroke_width, 3)
 
         y = padding
@@ -530,12 +520,13 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
-        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s glow_nonzero=%s text_nonzero=%s',
-                    glow_spread, glow_blur, img_w, img_h,
-                    sum(1 for p in glow_img.split()[3].getdata() if p > 0),
-                    sum(1 for p in text_img.split()[3].getdata() if p > 0))
+        result = Image.alpha_composite(result, text_layer)
 
-        return glow_img, text_img
+        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s alpha_nonzero=%s',
+                    glow_spread, glow_blur, img_w, img_h,
+                    sum(1 for p in result.split()[3].getdata() if p > 0))
+
+        return result
 
     def _anim_bounce(self, clip, start_time, duration, params):
         """Bounce-in animation: subtitle pops in-place with subtle bounce."""
