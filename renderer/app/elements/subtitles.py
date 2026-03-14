@@ -177,9 +177,9 @@ class SubtitlesElement(BaseElement):
             'font': self.data.get('font', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
             'bold': self.data.get('bold', False),
             'highlight_color': self.data.get('highlight-color', None),
-            'glow_spread': self.data.get('glow-spread', 10),
-            'glow_blur': self.data.get('glow-blur', 6),
-            'glow_opacity': self.data.get('glow-opacity', 150),
+            'glow_spread': self.data.get('glow-spread', None),  # None = auto (font_size/3)
+            'glow_blur': self.data.get('glow-blur', 20),
+            'glow_opacity': self.data.get('glow-opacity', 200),
         }
 
         # ─── Position ──────────────────────────────
@@ -477,7 +477,7 @@ class SubtitlesElement(BaseElement):
 
         # Image dimensions
         line_height = int(font.size * 1.4)
-        glow_pad = 20
+        glow_pad = 50  # enough room for spread + blur
         padding = stroke_width + glow_pad
         img_h = len(lines) * line_height + padding * 2
         img_w = max_width + glow_pad * 2
@@ -485,9 +485,10 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Glow layer: full alpha, thick colored stroke + blur ──
-        glow_spread = style.get('glow_spread', 10)
-        glow_blur = style.get('glow_blur', 6)
+        # ── 1) Glow layer: thick colored stroke + strong blur ──
+        font_sz = style.get('font_size', 32)
+        glow_spread = style.get('glow_spread') or max(int(font_sz / 3), 15)
+        glow_blur = style.get('glow_blur', 20)
         # glow_opacity handled by caller via set_opacity()
 
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
