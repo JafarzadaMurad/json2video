@@ -493,12 +493,24 @@ class SubtitlesElement(BaseElement):
                 x += font.getlength(word + ' ')
             y += line_height
 
+        # Pre-multiply alpha before blur (prevents dark edges from RGBA blur)
+        glow_np = np.array(glow_layer, dtype=np.float64)
+        alpha_factor = glow_np[:, :, 3:4] / 255.0
+        glow_np[:, :, :3] *= alpha_factor
+        glow_layer = Image.fromarray(np.clip(glow_np, 0, 255).astype(np.uint8), 'RGBA')
+
         glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
-        # Binary alpha: same as word-by-word (255 or 0, no semi-transparent)
-        r, g, b, a = glow_layer.split()
-        a = a.point(lambda p: 255 if p > 3 else 0)
-        glow_layer = Image.merge('RGBA', (r, g, b, a))
+        # Un-premultiply to recover true glow colors at all alpha levels
+        glow_np = np.array(glow_layer, dtype=np.float64)
+        alpha = glow_np[:, :, 3:4]
+        safe_alpha = np.where(alpha > 0, alpha / 255.0, 1.0)
+        glow_np[:, :, :3] = np.clip(glow_np[:, :, :3] / safe_alpha, 0, 255)
+
+        # Apply glow_opacity to control intensity
+        glow_opacity_val = style.get('glow_opacity', 200)
+        glow_np[:, :, 3] = np.clip(glow_np[:, :, 3] * (glow_opacity_val / 255.0), 0, 255)
+        glow_layer = Image.fromarray(glow_np.astype(np.uint8), 'RGBA')
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         result = Image.alpha_composite(result, glow_layer)
