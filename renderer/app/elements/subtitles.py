@@ -473,48 +473,44 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        # ── 1) Glow layer: mask-based per-color glow ──
+        # ── 1) Glow layer: mask-based glow for highlighted word only ──
         font_sz = style.get('font_size', 32)
         glow_spread = style.get('glow_spread') or max(int(font_sz / 3), 15)
         glow_blur = style.get('glow_blur', 20)
-        glow_opacity_val = style.get('glow_opacity', 200)
+        glow_opacity_val = style.get('glow_opacity', 255)
 
         result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
 
-        # Collect unique glow colors
-        unique_colors = set(get_word_color(idx) for line in lines for _, idx in line)
+        # Draw grayscale mask for highlighted word only
+        mask = Image.new('L', (img_w, img_h), 0)
+        mask_draw = ImageDraw.Draw(mask)
 
-        for glow_hex in unique_colors:
-            # Draw grayscale mask for words of this color
-            mask = Image.new('L', (img_w, img_h), 0)
-            mask_draw = ImageDraw.Draw(mask)
+        y = padding
+        for line in lines:
+            line_text = ' '.join(w for w, _ in line)
+            total_w = font.getlength(line_text)
+            x = (img_w - total_w) / 2
+            for word, idx in line:
+                if idx == highlight_idx:
+                    mask_draw.text((x, y), word, font=font, fill=255,
+                                   stroke_width=glow_spread, stroke_fill=255)
+                x += font.getlength(word + ' ')
+            y += line_height
 
-            y = padding
-            for line in lines:
-                line_text = ' '.join(w for w, _ in line)
-                total_w = font.getlength(line_text)
-                x = (img_w - total_w) / 2
-                for word, idx in line:
-                    if get_word_color(idx) == glow_hex:
-                        mask_draw.text((x, y), word, font=font, fill=255,
-                                       stroke_width=glow_spread, stroke_fill=255)
-                    x += font.getlength(word + ' ')
-                y += line_height
+        # Blur mask for soft glow spread
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
-            # Blur mask for soft glow spread
-            mask = mask.filter(ImageFilter.GaussianBlur(radius=glow_blur))
+        # Boost alpha strongly so glow is clearly visible, cap at glow_opacity
+        mask = mask.point(lambda p: min(glow_opacity_val, p * 5))
 
-            # Boost alpha so glow is clearly visible, cap at glow_opacity
-            mask = mask.point(lambda p: min(glow_opacity_val, p * 3))
+        # Create flat colored glow with blurred mask as alpha
+        cr = int(highlight_color.lstrip('#')[0:2], 16)
+        cg = int(highlight_color.lstrip('#')[2:4], 16)
+        cb = int(highlight_color.lstrip('#')[4:6], 16)
+        color_layer = Image.new('RGBA', (img_w, img_h), (cr, cg, cb, 0))
+        color_layer.putalpha(mask)
 
-            # Create flat colored layer with blurred mask as alpha
-            cr = int(glow_hex.lstrip('#')[0:2], 16)
-            cg = int(glow_hex.lstrip('#')[2:4], 16)
-            cb = int(glow_hex.lstrip('#')[4:6], 16)
-            color_layer = Image.new('RGBA', (img_w, img_h), (cr, cg, cb, 0))
-            color_layer.putalpha(mask)
-
-            result = Image.alpha_composite(result, color_layer)
+        result = Image.alpha_composite(result, color_layer)
 
         # ── 2) Text layer on top ──
         text_layer = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
