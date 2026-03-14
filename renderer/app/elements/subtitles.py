@@ -179,7 +179,7 @@ class SubtitlesElement(BaseElement):
             'highlight_color': self.data.get('highlight-color', None),
             'glow_spread': self.data.get('glow-spread', 10),
             'glow_blur': self.data.get('glow-blur', 6),
-            'glow_opacity': self.data.get('glow-opacity', 100),
+            'glow_opacity': self.data.get('glow-opacity', 150),
         }
 
         # ─── Position ──────────────────────────────
@@ -389,20 +389,23 @@ class SubtitlesElement(BaseElement):
         # ── Build the text clip ──
         if clip is None:
             if highlight_color:
-                # Styled rendering: random word highlighted + glow on all
-                img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                # Save to temp PNG — MoviePy correctly reads RGBA from files
-                import tempfile
-                tmp_png = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-                img.save(tmp_png.name, 'PNG')
-                clip = ImageClip(tmp_png.name)
-                # Clean up temp file after clip loads it
-                try:
-                    os.unlink(tmp_png.name)
-                except Exception:
-                    pass
-                x_pos = self._get_x_pos(img.width, position)
-                y_pos = self._get_y_pos(img.height, position)
+                # Styled rendering: glow + text as separate clips
+                glow_img, text_img = self._render_styled_subtitle(text, style, highlight_color, entry_index)
+                glow_opacity_frac = style.get('glow_opacity', 150) / 255.0
+
+                # Glow clip: full alpha, opacity controlled by MoviePy
+                glow_clip = ImageClip(np.array(glow_img))
+                glow_clip = glow_clip.set_opacity(glow_opacity_frac)
+
+                # Text clip: full alpha
+                clip = ImageClip(np.array(text_img))
+
+                # Stack glow behind text
+                img_w, img_h = text_img.size
+                combined = CompositeVideoClip([glow_clip, clip], size=(img_w, img_h))
+                x_pos = self._get_x_pos(img_w, position)
+                y_pos = self._get_y_pos(img_h, position)
+                clip = combined
             else:
                 clip = self._make_text_clip(text, style)
                 x_pos = self._get_x_pos(clip.w, position)
@@ -482,12 +485,10 @@ class SubtitlesElement(BaseElement):
         def get_word_color(idx):
             return highlight_color if idx == highlight_idx else base_color
 
-        result = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-
-        # ── 1) Neon glow in text's own color ──
-        glow_spread = style.get('glow_spread', 20)   # EXTREME for testing
-        glow_blur = style.get('glow_blur', 10)
-        glow_opacity = style.get('glow_opacity', 200)
+        # ── 1) Glow layer: full alpha, thick colored stroke + blur ──
+        glow_spread = style.get('glow_spread', 10)
+        glow_blur = style.get('glow_blur', 6)
+        # glow_opacity handled by caller via set_opacity()
 
         glow_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
@@ -506,15 +507,15 @@ class SubtitlesElement(BaseElement):
 
         glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=glow_blur))
 
+        # Force full alpha for any visible glow pixel (binary: 255 or 0)
         r, g, b, a = glow_img.split()
-        a = a.point(lambda p: min(glow_opacity, p) if p > 5 else 0)
+        a = a.point(lambda p: 255 if p > 5 else 0)
         glow_img = Image.merge('RGBA', (r, g, b, a))
-        result = Image.alpha_composite(result, glow_img)
 
-        # ── 2) Sharp text with thick black stroke ──
-        main_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
-        main_draw = ImageDraw.Draw(main_img)
-        thick_stroke = max(stroke_width, 3)  # thin outline so glow shows through
+        # ── 2) Text layer: sharp text with black stroke, full alpha ──
+        text_img = Image.new('RGBA', (img_w, img_h), (0, 0, 0, 0))
+        text_draw = ImageDraw.Draw(text_img)
+        thick_stroke = max(stroke_width, 3)
 
         y = padding
         for line in lines:
@@ -523,18 +524,17 @@ class SubtitlesElement(BaseElement):
             x = (img_w - total_w) / 2
             for word, idx in line:
                 color = get_word_color(idx)
-                main_draw.text((x, y), word, font=font, fill=color,
+                text_draw.text((x, y), word, font=font, fill=color,
                                stroke_width=thick_stroke, stroke_fill='#000000')
                 x += font.getlength(word + ' ')
             y += line_height
 
-        result = Image.alpha_composite(result, main_img)
+        logger.info('GLOW_DEBUG: spread=%s blur=%s size=%sx%s glow_nonzero=%s text_nonzero=%s',
+                    glow_spread, glow_blur, img_w, img_h,
+                    sum(1 for p in glow_img.split()[3].getdata() if p > 0),
+                    sum(1 for p in text_img.split()[3].getdata() if p > 0))
 
-        logger.info('GLOW_DEBUG: spread=%s blur=%s opacity=%s size=%sx%s alpha_nonzero=%s',
-                    glow_spread, glow_blur, glow_opacity, img_w, img_h,
-                    sum(1 for p in result.split()[3].getdata() if p > 0))
-
-        return result
+        return glow_img, text_img
 
     def _anim_bounce(self, clip, start_time, duration, params):
         """Bounce-in animation: subtitle pops in-place with subtle bounce."""
