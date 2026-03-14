@@ -391,7 +391,7 @@ class SubtitlesElement(BaseElement):
             if highlight_color:
                 # Styled rendering: separate glow + text clips
                 glow_img, text_img, _ = self._render_styled_subtitle(text, style, highlight_color, entry_index)
-                glow_opacity_val = style.get('glow_opacity', 0.7)
+                glow_opacity_val = style.get('glow_opacity', 0.2)
                 if isinstance(glow_opacity_val, int) and glow_opacity_val > 1:
                     glow_opacity_val = glow_opacity_val / 255.0  # normalize 0-255 to 0.0-1.0
                 
