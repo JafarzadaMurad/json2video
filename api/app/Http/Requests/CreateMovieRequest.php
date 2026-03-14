@@ -65,6 +65,9 @@ class CreateMovieRequest extends FormRequest
             'scenes.*.elements.*.bold' => 'sometimes|boolean',
             'scenes.*.elements.*.font' => 'sometimes|string|max:200',
             'scenes.*.elements.*.highlight-color' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.glow-opacity' => 'sometimes|numeric|min:0|max:1',
+            'scenes.*.elements.*.glow-blur' => 'sometimes|integer|min:0|max:100',
+            'scenes.*.elements.*.glow-spread' => 'sometimes|integer|min:0|max:100',
 
             // Subtitle positioning
             'scenes.*.elements.*.position-x' => 'sometimes|string|in:left,center,right',
