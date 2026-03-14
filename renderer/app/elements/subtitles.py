@@ -174,7 +174,10 @@ class SubtitlesElement(BaseElement):
             'bg_color': self.data.get('background', None),
             'stroke_color': self.data.get('stroke-color', None),
             'stroke_width': self.data.get('stroke-width', 2),
-            'font': self.data.get('font', '/usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf'),
+            'font': self.data.get('font',
+                        '/usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf'
+                        if os.path.exists('/usr/share/fonts/truetype/montserrat/Montserrat-Black.ttf')
+                        else '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
             'bold': self.data.get('bold', False),
             'highlight_color': self.data.get('highlight-color', None),
             'glow_spread': self.data.get('glow-spread', None),  # None = auto (font_size/3)
