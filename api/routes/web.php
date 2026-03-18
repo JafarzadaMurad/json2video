@@ -11,6 +11,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserDashboardController;
 use Illuminate\Support\Facades\Route;
 
+// ─── API Documentation ───────────────────────
+Route::get('/docs', function () {
+    return view('docs');
+})->name('docs');
+
 // ─── Public Landing Page ──────────────────────
 Route::get('/', function () {
     return view('portal.landing');
