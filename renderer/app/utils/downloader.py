@@ -82,8 +82,14 @@ def download_asset(url: str, temp_dir: str, allowed_types: list = None) -> str:
     filepath = os.path.join(temp_dir, filename)
 
     os.makedirs(temp_dir, exist_ok=True)
+    import time
+    start_time = time.time()
+    MAX_DOWNLOAD_TIME = 600  # 10 minutes maximum per file
+
     with open(filepath, 'wb') as f:
         for chunk in response.iter_content(chunk_size=8192):
+            if time.time() - start_time > MAX_DOWNLOAD_TIME:
+                raise TimeoutError(f"File download exceeded maximum allowed time of {MAX_DOWNLOAD_TIME} seconds")
             f.write(chunk)
 
     # Cache it
