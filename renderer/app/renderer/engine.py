@@ -146,7 +146,8 @@ class RenderEngine:
                 fps=self.fps,
                 codec='libx264',
                 audio_codec='aac',
-                preset='medium',
+                preset='fast',
+                threads=4,
                 ffmpeg_params=['-crf', str(self.crf)],
                 logger=None,
             )
