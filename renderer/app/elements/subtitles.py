@@ -329,6 +329,35 @@ class SubtitlesElement(BaseElement):
         if not entries:
             raise ValueError(f'No valid subtitle entries found in {fmt.upper()} file: {src}')
 
+        # ─── SRT Validation: reject malformed files ───────────
+        MAX_CHARS_PER_BLOCK = 200  # Maximum characters allowed in a single subtitle block
+        total_duration = sum(e['end'] - e['start'] for e in entries)
+
+        for entry in entries:
+            char_count = len(entry['text'])
+            block_duration = entry['end'] - entry['start']
+
+            if char_count > MAX_CHARS_PER_BLOCK:
+                raise ValueError(
+                    f'SRT validation error: Block #{entry["index"]} has {char_count} characters '
+                    f'(max allowed: {MAX_CHARS_PER_BLOCK}). '
+                    f'Duration: {block_duration:.1f}s. '
+                    f'The SRT file appears malformed — each subtitle block should contain '
+                    f'a short phrase (1-2 lines), not the entire script. '
+                    f'Please split the text into smaller blocks (e.g. 3-5 seconds each).'
+                )
+
+        # Warn if too few blocks for long content
+        if total_duration > 15 and len(entries) < 3:
+            raise ValueError(
+                f'SRT validation error: Only {len(entries)} subtitle block(s) found '
+                f'for {total_duration:.1f}s of content. '
+                f'The SRT file appears malformed — for {total_duration:.0f} seconds of audio, '
+                f'there should be at least {int(total_duration / 5)} subtitle blocks '
+                f'(approximately one every 3-5 seconds). '
+                f'Please regenerate the SRT with proper timestamps.'
+            )
+
         logger.info(f'Parsed {len(entries)} subtitle entries from {fmt.upper()}')
 
         clips = []
