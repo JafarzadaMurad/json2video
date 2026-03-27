@@ -92,6 +92,19 @@ class CreateMovieRequest extends FormRequest
 
             // Audio
             'scenes.*.elements.*.volume' => 'sometimes|numeric|min:0|max:1',
+
+            // Auto-SRT (subtitles:true on video/audio elements)
+            'scenes.*.elements.*.subtitles' => 'sometimes',
+            'scenes.*.elements.*.subtitles.enabled' => 'sometimes|boolean',
+            'scenes.*.elements.*.subtitles.font-size' => 'sometimes|integer|min:8|max:200',
+            'scenes.*.elements.*.subtitles.color' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.subtitles.bottom' => 'sometimes|integer',
+            'scenes.*.elements.*.subtitles.font' => 'sometimes|string|max:200',
+            'scenes.*.elements.*.subtitles.stroke-color' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.subtitles.stroke-width' => 'sometimes|integer|min:0|max:20',
+            'scenes.*.elements.*.subtitles.highlight-color' => 'sometimes|string|max:20',
+            'scenes.*.elements.*.subtitles.animation' => 'sometimes',
+            'scenes.*.elements.*.subtitles.position-y' => 'sometimes|string|in:top,center,bottom',
         ];
     }
 

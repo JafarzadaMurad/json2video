@@ -25,8 +25,9 @@ from app.elements.text import TextElement
 from app.elements.audio import AudioElement
 from app.elements.video import VideoElement
 from app.elements.subtitles import SubtitlesElement
-from app.utils.downloader import cleanup_temp
+from app.utils.downloader import cleanup_temp, download_asset
 from app.utils.progress_reporter import ProgressReporter
+from app.services.transcriber import transcribe_from_video, transcribe_from_audio
 
 logger = logging.getLogger('engine')
 
@@ -187,6 +188,98 @@ class RenderEngine:
             cleanup_temp(self.temp_dir)
             raise
 
+    # ─── Auto-SRT Pre-processing ────────────────────
+
+    def _preprocess_auto_subtitles(self, elements: list, scene_duration: float) -> list:
+        """
+        Scan elements for video/audio with subtitles:true.
+        For each, transcribe audio to SRT and inject a subtitle element.
+        Returns the modified elements list.
+        """
+        new_elements = list(elements)  # copy to avoid modifying original
+        injected = []
+
+        for elem in elements:
+            elem_type = elem.get('type')
+            subtitles_config = elem.get('subtitles')
+
+            if not subtitles_config:
+                continue
+
+            if elem_type not in ('video', 'audio'):
+                logger.warning(f'subtitles:true is only supported on video/audio elements, '
+                               f'ignoring on {elem_type}')
+                continue
+
+            # Parse subtitles config (can be True or a dict with style options)
+            if isinstance(subtitles_config, bool):
+                sub_style = {}
+            elif isinstance(subtitles_config, dict):
+                if not subtitles_config.get('enabled', True):
+                    continue
+                sub_style = {k: v for k, v in subtitles_config.items() if k != 'enabled'}
+            else:
+                continue
+
+            logger.info(f'Auto-SRT: Generating subtitles for {elem_type} element')
+
+            try:
+                src = elem.get('src')
+                if not src:
+                    logger.warning('Auto-SRT: Element has no src, skipping')
+                    continue
+
+                # Download the asset
+                local_path = download_asset(src, self.temp_dir)
+
+                # Generate SRT
+                if elem_type == 'video':
+                    srt_path = transcribe_from_video(local_path, self.temp_dir)
+                else:  # audio
+                    srt_path = transcribe_from_audio(local_path, self.temp_dir)
+
+                # Build subtitle element from generated SRT
+                sub_element = {
+                    'type': 'subtitles',
+                    'src': srt_path,  # local file path (not URL)
+                    'color': sub_style.get('color', '#ffffff'),
+                    'font-size': sub_style.get('font-size', 32),
+                    'bottom': sub_style.get('bottom', 100),
+                    'start': elem.get('start', 0),
+                    'duration': elem.get('duration', scene_duration),
+                }
+
+                # Pass through optional style params
+                if 'font' in sub_style:
+                    sub_element['font'] = sub_style['font']
+                if 'stroke-color' in sub_style:
+                    sub_element['stroke-color'] = sub_style['stroke-color']
+                if 'stroke-width' in sub_style:
+                    sub_element['stroke-width'] = sub_style['stroke-width']
+                if 'highlight-color' in sub_style:
+                    sub_element['highlight-color'] = sub_style['highlight-color']
+                if 'glow-spread' in sub_style:
+                    sub_element['glow-spread'] = sub_style['glow-spread']
+                if 'glow-blur' in sub_style:
+                    sub_element['glow-blur'] = sub_style['glow-blur']
+                if 'glow-opacity' in sub_style:
+                    sub_element['glow-opacity'] = sub_style['glow-opacity']
+                if 'animation' in sub_style:
+                    sub_element['animation'] = sub_style['animation']
+                if 'position-y' in sub_style:
+                    sub_element['position-y'] = sub_style['position-y']
+
+                injected.append(sub_element)
+                logger.info(f'Auto-SRT: Subtitle element injected successfully')
+
+            except Exception as e:
+                logger.error(f'Auto-SRT: Failed to generate subtitles: {e}')
+                raise RuntimeError(f'Auto-subtitle generation failed for {elem_type}: {e}')
+
+        # Append injected subtitle elements at the end (rendered on top)
+        new_elements.extend(injected)
+        return new_elements
+
     # ─── Scene Rendering ──────────────────────────
 
     def _render_scene(self, index: int, scene_data: dict) -> CompositeVideoClip:
@@ -205,6 +298,9 @@ class RenderEngine:
             size=self.resolution,
             color=bg_color,
         ).set_duration(duration)
+
+        # Pre-process: auto-generate SRT for elements with subtitles:true
+        elements = self._preprocess_auto_subtitles(elements, duration)
 
         # Process elements
         visual_clips = [bg]

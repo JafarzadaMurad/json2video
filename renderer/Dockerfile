@@ -42,4 +42,9 @@ COPY . .
 # Create temp directory for renders
 RUN mkdir -p /tmp/renders /app/storage/renders
 
+# Pre-download Whisper model (baked into image, no download on each start)
+ENV WHISPER_MODEL=large-v3-turbo
+ENV WHISPER_DEVICE=cpu
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('large-v3-turbo', device='cpu', compute_type='int8')"
+
 CMD ["python", "-m", "app.worker"]

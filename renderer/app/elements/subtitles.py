@@ -303,7 +303,12 @@ class SubtitlesElement(BaseElement):
     def _render_subtitle_file(self, src, temp_dir, style, position, animation):
         """Render subtitle file (SRT or ASS) as multiple timed subtitle clips."""
         logger.info(f'Subtitles from file: {src}')
-        local_path = download_asset(src, temp_dir)
+
+        # Support local file paths (from auto-SRT) and remote URLs
+        if os.path.isfile(src):
+            local_path = src
+        else:
+            local_path = download_asset(src, temp_dir)
 
         # Read file with encoding fallback
         try:
