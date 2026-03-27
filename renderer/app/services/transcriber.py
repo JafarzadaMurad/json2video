@@ -77,13 +77,16 @@ def extract_audio(input_path: str, output_path: str) -> str:
         raise RuntimeError('Audio extraction timed out (>120s)')
 
 
-def transcribe_to_srt(audio_path: str, output_path: str = None) -> str:
+def transcribe_to_srt(audio_path: str, output_path: str = None,
+                      max_words_per_block: int = 7) -> str:
     """
     Transcribe an audio file to SRT format using Whisper.
+    Uses word-level timestamps to create short, readable subtitle blocks.
 
     Args:
         audio_path: Path to the audio file (WAV, MP3, etc.)
-        output_path: Optional output SRT file path. If None, uses same name as audio with .srt extension.
+        output_path: Optional output SRT file path.
+        max_words_per_block: Maximum words per subtitle block (default: 7)
 
     Returns:
         Path to the generated SRT file.
@@ -97,30 +100,59 @@ def transcribe_to_srt(audio_path: str, output_path: str = None) -> str:
     logger.info(f'Transcribing audio: {audio_path}')
 
     model = _get_model()
-    segments, info = model.transcribe(audio_path, beam_size=5)
+
+    # word_timestamps=True gives us per-word timing for precise subtitle blocks
+    segments, info = model.transcribe(audio_path, beam_size=5, word_timestamps=True)
 
     logger.info(f'Detected language: {info.language} (confidence: {info.language_probability:.2f})')
 
-    # Write SRT file
-    segment_count = 0
-    with open(output_path, 'w', encoding='utf-8') as f:
-        for i, segment in enumerate(segments):
-            start_time = _format_srt_time(segment.start)
-            end_time = _format_srt_time(segment.end)
-            text = segment.text.strip()
+    # Collect all words with timestamps
+    all_words = []
+    for segment in segments:
+        if segment.words:
+            for word in segment.words:
+                all_words.append({
+                    'text': word.word.strip(),
+                    'start': word.start,
+                    'end': word.end,
+                })
 
-            if not text:
-                continue
-
-            segment_count += 1
-            f.write(f"{segment_count}\n")
-            f.write(f"{start_time} --> {end_time}\n")
-            f.write(f"{text}\n\n")
-
-    if segment_count == 0:
+    if not all_words:
         raise ValueError('No speech detected in the audio file. Cannot generate subtitles.')
 
-    logger.info(f'Transcription complete: {segment_count} segments → {output_path}')
+    # Group words into short blocks (max N words per subtitle)
+    blocks = []
+    current_block = []
+
+    for word in all_words:
+        current_block.append(word)
+
+        if len(current_block) >= max_words_per_block:
+            blocks.append({
+                'start': current_block[0]['start'],
+                'end': current_block[-1]['end'],
+                'text': ' '.join(w['text'] for w in current_block),
+            })
+            current_block = []
+
+    # Don't forget the last block
+    if current_block:
+        blocks.append({
+            'start': current_block[0]['start'],
+            'end': current_block[-1]['end'],
+            'text': ' '.join(w['text'] for w in current_block),
+        })
+
+    # Write SRT file
+    with open(output_path, 'w', encoding='utf-8') as f:
+        for i, block in enumerate(blocks):
+            start_time = _format_srt_time(block['start'])
+            end_time = _format_srt_time(block['end'])
+            f.write(f"{i + 1}\n")
+            f.write(f"{start_time} --> {end_time}\n")
+            f.write(f"{block['text']}\n\n")
+
+    logger.info(f'Transcription complete: {len(blocks)} subtitle blocks → {output_path}')
     return output_path
 
 
