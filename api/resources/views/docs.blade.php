@@ -527,6 +527,7 @@
             <a href="#el-text" class="nav-link">📝 Text</a>
             <a href="#el-audio" class="nav-link">🔊 Audio</a>
             <a href="#el-subtitles" class="nav-link">💬 Subtitles</a>
+            <a href="#auto-srt" class="nav-link">🤖 Auto-SRT</a>
             <a href="#glow" class="nav-link">✨ Glow Effect</a>
             <a href="#transitions" class="nav-link">🔄 Transitions</a>
             <a href="#animations" class="nav-link">🎭 Animations</a>
@@ -1086,6 +1087,13 @@
                     <td>1.0</td>
                     <td>Speed (0.1–10)</td>
                 </tr>
+                <tr>
+                    <td>subtitles</td>
+                    <td><span class="tag tag-bool">bool</span> | <span class="tag tag-array">object</span></td>
+                    <td>false</td>
+                    <td>Auto-generate subtitles from video audio using AI (Whisper). See <a href="#auto-srt"
+                            style="color:var(--accent2)">Auto-SRT</a></td>
+                </tr>
             </table>
         </section>
 
@@ -1166,7 +1174,120 @@
                     <td>1.0</td>
                     <td>Volume level (0–1)</td>
                 </tr>
+                <tr>
+                    <td>subtitles</td>
+                    <td><span class="tag tag-bool">bool</span> | <span class="tag tag-array">object</span></td>
+                    <td>false</td>
+                    <td>Auto-generate subtitles from audio using AI (Whisper). See <a href="#auto-srt"
+                            style="color:var(--accent2)">Auto-SRT</a></td>
+                </tr>
             </table>
+        </section>
+
+        <!-- AUTO-SRT -->
+        <section class="section" id="auto-srt">
+            <h3>🤖 Auto-SRT (AI Subtitle Generation)</h3>
+            <p>Automatically generate subtitles from video or audio elements using OpenAI Whisper AI.
+                Add <code class="td-code">"subtitles": true</code> to any video or audio element to enable.</p>
+
+            <div class="alert alert-tip">💡 The system uses word-level timestamps to create short, readable subtitle
+                blocks (max 7 words each).</div>
+
+            <h4>Simple Usage</h4>
+            <pre>{
+  <span class="color-key">"type"</span>: <span class="color-str">"audio"</span>,
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/voiceover.mp3"</span>,
+  <span class="color-key">"subtitles"</span>: <span class="color-bool">true</span>
+}</pre>
+
+            <h4>With Custom Style</h4>
+            <pre>{
+  <span class="color-key">"type"</span>: <span class="color-str">"video"</span>,
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/interview.mp4"</span>,
+  <span class="color-key">"subtitles"</span>: {
+    <span class="color-key">"enabled"</span>: <span class="color-bool">true</span>,
+    <span class="color-key">"font-size"</span>: <span class="color-num">48</span>,
+    <span class="color-key">"color"</span>: <span class="color-str">"#ffffff"</span>,
+    <span class="color-key">"bottom"</span>: <span class="color-num">150</span>,
+    <span class="color-key">"stroke-color"</span>: <span class="color-str">"#000000"</span>,
+    <span class="color-key">"stroke-width"</span>: <span class="color-num">3</span>,
+    <span class="color-key">"animation"</span>: { <span class="color-key">"type"</span>: <span class="color-str">"highlight"</span>, <span class="color-key">"highlight-color"</span>: <span class="color-str">"auto"</span> }
+  }
+}</pre>
+
+            <h4>Subtitles Config Properties</h4>
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Type</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>enabled</td>
+                    <td><span class="tag tag-bool">bool</span></td>
+                    <td>true</td>
+                    <td>Enable/disable auto subtitles</td>
+                </tr>
+                <tr>
+                    <td>font-size</td>
+                    <td><span class="tag tag-number">int</span></td>
+                    <td>32</td>
+                    <td>Subtitle font size (8–200)</td>
+                </tr>
+                <tr>
+                    <td>color</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>#ffffff</td>
+                    <td>Text color (hex)</td>
+                </tr>
+                <tr>
+                    <td>font</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>Montserrat</td>
+                    <td>Font name</td>
+                </tr>
+                <tr>
+                    <td>bottom</td>
+                    <td><span class="tag tag-number">int</span></td>
+                    <td>100</td>
+                    <td>Distance from bottom (px)</td>
+                </tr>
+                <tr>
+                    <td>position-y</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>bottom</td>
+                    <td>top, center, bottom</td>
+                </tr>
+                <tr>
+                    <td>stroke-color</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>#000000</td>
+                    <td>Text outline color</td>
+                </tr>
+                <tr>
+                    <td>stroke-width</td>
+                    <td><span class="tag tag-number">int</span></td>
+                    <td>2</td>
+                    <td>Text outline width (0–20)</td>
+                </tr>
+                <tr>
+                    <td>highlight-color</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>—</td>
+                    <td>Highlight color or <code class="td-code">"auto"</code> for rainbow</td>
+                </tr>
+                <tr>
+                    <td>animation</td>
+                    <td><span class="tag tag-array">object</span></td>
+                    <td>—</td>
+                    <td>Same animation options as Subtitles element</td>
+                </tr>
+            </table>
+
+            <div class="alert alert-warn">⚠️ Auto-SRT adds processing time (~30–60s per minute of audio on CPU). For
+                pre-made subtitles, use the <a href="#el-subtitles" style="color:var(--orange)">Subtitles element</a>
+                with an SRT file instead.</div>
         </section>
 
         <!-- SUBTITLES -->
