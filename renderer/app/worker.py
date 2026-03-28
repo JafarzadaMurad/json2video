@@ -6,6 +6,7 @@ processes them using the render engine, and updates job status in MySQL.
 """
 import json
 import logging
+import os
 import signal
 import sys
 import time
@@ -21,6 +22,8 @@ import mysql.connector
 
 from app.config import Config
 from app.renderer.engine import RenderEngine
+from app.services.transcriber import transcribe_to_srt, extract_audio, transcribe_from_audio
+from app.utils.downloader import download_asset
 
 # Configure logging
 logging.basicConfig(
@@ -138,6 +141,106 @@ def process_job(job_data: dict, db):
         send_webhook(db, job_id, 'failed', job_data, error=error_msg)
 
 
+def process_transcribe_job(job_data: dict, db):
+    """Process a single transcription job."""
+    job_id = job_data['job_id']
+    src_url = job_data['src_url']
+    logger.info(f'Processing transcribe job: {job_id}')
+
+    # Mark as processing
+    cursor = db.cursor()
+    cursor.execute(
+        'UPDATE transcribe_jobs SET status = %s, worker_id = %s, started_at = %s WHERE id = %s',
+        ('processing', Config.WORKER_ID, time.strftime('%Y-%m-%d %H:%M:%S'), job_id)
+    )
+    cursor.close()
+
+    temp_dir = os.path.join(Config.TEMP_DIR, f'transcribe_{job_id}')
+    os.makedirs(temp_dir, exist_ok=True)
+
+    try:
+        # Download the source file
+        logger.info(f'Downloading source: {src_url}')
+        local_path = download_asset(src_url, temp_dir)
+
+        # Detect type by extension
+        ext = os.path.splitext(local_path)[1].lower()
+        video_exts = {'.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv', '.wmv'}
+
+        if ext in video_exts:
+            # Extract audio from video first
+            logger.info('Source is video, extracting audio...')
+            audio_path = os.path.join(temp_dir, 'extracted_audio.wav')
+            extract_audio(local_path, audio_path)
+        else:
+            audio_path = local_path
+
+        # Transcribe to SRT
+        srt_temp_path = os.path.join(temp_dir, f'{job_id}.srt')
+        transcribe_to_srt(audio_path, srt_temp_path)
+
+        # Read SRT to count segments and get language info
+        from app.services.transcriber import _get_model
+        # Re-transcribe to get language info (model is cached, this is fast)
+        model = _get_model()
+        _, info = model.transcribe(audio_path, beam_size=1)
+        language = info.language
+        language_confidence = round(info.language_probability, 2)
+
+        # Count segments
+        with open(srt_temp_path, 'r', encoding='utf-8') as f:
+            segment_count = sum(1 for line in f if line.strip() and line.strip().isdigit())
+
+        # Copy SRT to permanent storage
+        srt_storage_dir = os.path.join(Config.STORAGE_PATH, 'srt')
+        os.makedirs(srt_storage_dir, exist_ok=True)
+        srt_final_path = os.path.join(srt_storage_dir, f'{job_id}.srt')
+
+        import shutil
+        shutil.copy2(srt_temp_path, srt_final_path)
+
+        # Build public URL
+        srt_url = f'{Config.STORAGE_URL}/srt/{job_id}.srt'
+
+        # Calculate expiry (1 hour from now)
+        from datetime import datetime, timedelta
+        expires_at = (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+
+        # Update job as done
+        cursor = db.cursor()
+        cursor.execute(
+            '''UPDATE transcribe_jobs
+               SET status = %s, language = %s, language_confidence = %s,
+                   segments = %s, srt_path = %s, srt_url = %s,
+                   completed_at = %s, expires_at = %s
+               WHERE id = %s''',
+            ('done', language, language_confidence, segment_count,
+             srt_final_path, srt_url,
+             time.strftime('%Y-%m-%d %H:%M:%S'), expires_at, job_id)
+        )
+        cursor.close()
+
+        logger.info(f'Transcribe job {job_id} completed: {segment_count} segments, '
+                    f'language={language} ({language_confidence}), URL: {srt_url}')
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f'Transcribe job {job_id} failed: {error_msg}\n{traceback.format_exc()}')
+
+        cursor = db.cursor()
+        cursor.execute(
+            'UPDATE transcribe_jobs SET status = %s, error_message = %s, completed_at = %s WHERE id = %s',
+            ('failed', error_msg[:2000], time.strftime('%Y-%m-%d %H:%M:%S'), job_id)
+        )
+        cursor.close()
+
+    finally:
+        # Cleanup temp directory
+        import shutil
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 def send_webhook(db, job_id: str, status: str, job_data: dict, **kwargs):
     """Send webhook notification if configured."""
     import requests as http_requests
@@ -222,24 +325,31 @@ def main():
     if not running or not db:
         return
 
-    logger.info(f'Listening for jobs on queue: {Config.REDIS_QUEUE}')
+    render_queue = Config.REDIS_QUEUE
+    transcribe_queue = Config.REDIS_PREFIX + 'transcribe:jobs'
+
+    logger.info(f'Listening for jobs on queues: {render_queue}, {transcribe_queue}')
 
     while running:
         try:
-            # BLPOP blocks until a message is available (timeout 5s)
-            result = r.blpop(Config.REDIS_QUEUE, timeout=5)
+            # BLPOP on both queues (render gets priority by being first)
+            result = r.blpop([render_queue, transcribe_queue], timeout=5)
 
             if result is None:
                 continue  # Timeout, loop again
 
-            _, raw_message = result
+            queue_name, raw_message = result
             job_data = json.loads(raw_message)
 
             # Ensure DB connection is alive
             if not db.is_connected():
                 db = get_db_connection()
 
-            process_job(job_data, db)
+            # Route to correct processor based on which queue
+            if 'transcribe' in queue_name:
+                process_transcribe_job(job_data, db)
+            else:
+                process_job(job_data, db)
 
         except redis.ConnectionError:
             logger.error('Lost Redis connection. Reconnecting...')

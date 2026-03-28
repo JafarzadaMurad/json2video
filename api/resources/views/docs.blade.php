@@ -554,6 +554,12 @@
             <div class="nav-group-title">Account</div>
             <a href="#account" class="nav-link"><span class="method method-get">GET</span> Account Info</a>
         </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Transcription</div>
+            <a href="#create-transcribe" class="nav-link"><span class="method method-post">POST</span> Transcribe</a>
+            <a href="#get-transcribe" class="nav-link"><span class="method method-get">GET</span> Get Status</a>
+        </div>
     </aside>
 
     <main class="main">
@@ -1816,6 +1822,69 @@
   },
   <span class="color-key">"usage"</span>: { <span class="color-key">"total_jobs"</span>: <span class="color-num">45</span>, <span class="color-key">"completed_jobs"</span>: <span class="color-num">42</span> }
 }</pre>
+        </section>
+
+        <hr class="divider">
+
+        <!-- TRANSCRIPTION -->
+        <section class="section" id="create-transcribe">
+            <h2>Transcription (Audio/Video → SRT)</h2>
+            <p>Generate SRT subtitle files from audio or video using AI (OpenAI Whisper). Files expire after 1 hour.</p>
+
+            <div class="endpoint-header">
+                <span class="method method-post">POST</span>
+                <span class="path">/api/v1/transcribe</span>
+            </div>
+
+            <h4>Request Body</h4>
+            <pre>{
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/voiceover.mp3"</span>
+}</pre>
+
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>src</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td><span class="required">Yes</span></td>
+                    <td>URL to audio (MP3, WAV, AAC) or video (MP4, WebM, MOV) file</td>
+                </tr>
+            </table>
+
+            <h4>Response — <span class="status status-202">202 Accepted</span></h4>
+            <pre>{
+  <span class="color-key">"job_id"</span>: <span class="color-str">"019d3a12-4b5c-..."</span>,
+  <span class="color-key">"status"</span>: <span class="color-str">"queued"</span>,
+  <span class="color-key">"src_type"</span>: <span class="color-str">"audio"</span>,
+  <span class="color-key">"created_at"</span>: <span class="color-str">"2026-03-28T09:35:00+00:00"</span>
+}</pre>
+        </section>
+
+        <section class="section" id="get-transcribe">
+            <div class="endpoint-header">
+                <span class="method method-get">GET</span>
+                <span class="path">/api/v1/transcribe/{job_id}</span>
+            </div>
+
+            <h4>Response — Done</h4>
+            <pre>{
+  <span class="color-key">"job_id"</span>: <span class="color-str">"019d3a12-..."</span>,
+  <span class="color-key">"status"</span>: <span class="color-str">"done"</span>,
+  <span class="color-key">"language"</span>: <span class="color-str">"az"</span>,
+  <span class="color-key">"language_confidence"</span>: <span class="color-num">0.94</span>,
+  <span class="color-key">"segments"</span>: <span class="color-num">18</span>,
+  <span class="color-key">"srt_url"</span>: <span class="color-str">"http://168.231.108.200:2993/renders/srt/019d3a12-....srt"</span>,
+  <span class="color-key">"completed_at"</span>: <span class="color-str">"2026-03-28T09:35:42+00:00"</span>,
+  <span class="color-key">"expires_at"</span>: <span class="color-str">"2026-03-28T10:35:42+00:00"</span>
+}</pre>
+
+            <div class="alert alert-warn">⚠️ SRT files expire after <strong>1 hour</strong>. Download or use the URL
+                before expiry.</div>
         </section>
 
         <div style="text-align:center;padding:48px 0;color:var(--text2);font-size:13px">

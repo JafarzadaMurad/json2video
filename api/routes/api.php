@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\MovieController;
 use App\Http\Controllers\Api\V1\TemplateController;
+use App\Http\Controllers\Api\V1\TranscribeController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,10 @@ Route::middleware(['api-key', 'rate-limit', 'track-usage'])->group(function () {
     Route::get('/movies', [MovieController::class, 'index']);
     Route::get('/movies/{jobId}', [MovieController::class, 'show']);
     Route::delete('/movies/{jobId}', [MovieController::class, 'destroy']);
+
+    // ─── Transcription (Audio/Video → SRT) ───────
+    Route::post('/transcribe', [TranscribeController::class, 'store']);
+    Route::get('/transcribe/{jobId}', [TranscribeController::class, 'show']);
 
     // ─── Templates ───────────────────────────────
     Route::get('/templates', [TemplateController::class, 'index']);

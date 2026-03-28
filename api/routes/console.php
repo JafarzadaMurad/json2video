@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 // Cleanup expired videos every hour
 Schedule::command('videos:cleanup')->hourly();
 
+// Cleanup expired transcription SRT files every 10 minutes
+Schedule::command('transcribe:cleanup')->everyTenMinutes();
+
 // Downgrade expired plan users daily at midnight
 Schedule::command('plans:expire')->daily();
 
