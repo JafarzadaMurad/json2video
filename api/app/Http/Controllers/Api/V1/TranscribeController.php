@@ -35,6 +35,7 @@ class TranscribeController extends Controller
             'status' => TranscribeJob::STATUS_QUEUED,
             'src_url' => $validated['src'],
             'src_type' => $srcType,
+            'language' => $validated['language'] ?? null,
         ]);
 
         // Dispatch to Redis queue for Python worker

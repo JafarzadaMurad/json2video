@@ -15,6 +15,7 @@ class CreateTranscribeRequest extends FormRequest
     {
         return [
             'src' => 'required|url|max:1000',
+            'language' => 'sometimes|nullable|string|max:5',
         ];
     }
 

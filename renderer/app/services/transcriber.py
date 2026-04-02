@@ -78,7 +78,8 @@ def extract_audio(input_path: str, output_path: str) -> str:
 
 
 def transcribe_to_srt(audio_path: str, output_path: str = None,
-                      max_words_per_block: int = 7) -> str:
+                      max_words_per_block: int = 7,
+                      language: str = None) -> str:
     """
     Transcribe an audio file to SRT format using Whisper.
     Uses word-level timestamps to create short, readable subtitle blocks.
@@ -87,6 +88,7 @@ def transcribe_to_srt(audio_path: str, output_path: str = None,
         audio_path: Path to the audio file (WAV, MP3, etc.)
         output_path: Optional output SRT file path.
         max_words_per_block: Maximum words per subtitle block (default: 7)
+        language: Optional language code (e.g. 'az', 'en', 'tr'). None = auto-detect.
 
     Returns:
         Path to the generated SRT file.
@@ -97,12 +99,16 @@ def transcribe_to_srt(audio_path: str, output_path: str = None,
     if output_path is None:
         output_path = os.path.splitext(audio_path)[0] + '.srt'
 
-    logger.info(f'Transcribing audio: {audio_path}')
+    logger.info(f'Transcribing audio: {audio_path} (language={language or "auto"})')
 
     model = _get_model()
 
     # word_timestamps=True gives us per-word timing for precise subtitle blocks
-    segments, info = model.transcribe(audio_path, beam_size=5, word_timestamps=True)
+    transcribe_kwargs = {'beam_size': 5, 'word_timestamps': True}
+    if language:
+        transcribe_kwargs['language'] = language
+
+    segments, info = model.transcribe(audio_path, **transcribe_kwargs)
 
     logger.info(f'Detected language: {info.language} (confidence: {info.language_probability:.2f})')
 

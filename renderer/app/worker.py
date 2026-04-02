@@ -145,7 +145,8 @@ def process_transcribe_job(job_data: dict, db):
     """Process a single transcription job."""
     job_id = job_data['job_id']
     src_url = job_data['src_url']
-    logger.info(f'Processing transcribe job: {job_id}')
+    language = job_data.get('language')  # None = auto-detect
+    logger.info(f'Processing transcribe job: {job_id} (language={language or "auto"})')
 
     # Mark as processing
     cursor = db.cursor()
@@ -175,16 +176,18 @@ def process_transcribe_job(job_data: dict, db):
         else:
             audio_path = local_path
 
-        # Transcribe to SRT
+        # Transcribe to SRT (with optional language)
         srt_temp_path = os.path.join(temp_dir, f'{job_id}.srt')
-        transcribe_to_srt(audio_path, srt_temp_path)
+        transcribe_to_srt(audio_path, srt_temp_path, language=language)
 
-        # Read SRT to count segments and get language info
+        # Get language info (quick detect, model is cached)
         from app.services.transcriber import _get_model
-        # Re-transcribe to get language info (model is cached, this is fast)
         model = _get_model()
-        _, info = model.transcribe(audio_path, beam_size=1)
-        language = info.language
+        detect_kwargs = {'beam_size': 1}
+        if language:
+            detect_kwargs['language'] = language
+        _, info = model.transcribe(audio_path, **detect_kwargs)
+        detected_language = info.language
         language_confidence = round(info.language_probability, 2)
 
         # Count segments
@@ -214,7 +217,7 @@ def process_transcribe_job(job_data: dict, db):
                    segments = %s, srt_path = %s, srt_url = %s,
                    completed_at = %s, expires_at = %s
                WHERE id = %s''',
-            ('done', language, language_confidence, segment_count,
+            ('done', detected_language, language_confidence, segment_count,
              srt_final_path, srt_url,
              time.strftime('%Y-%m-%d %H:%M:%S'), expires_at, job_id)
         )

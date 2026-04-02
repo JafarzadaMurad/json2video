@@ -17,6 +17,7 @@ class TranscribeDispatcher
             'job_type' => 'transcribe',
             'user_id' => $job->user_id,
             'src_url' => $job->src_url,
+            'language' => $job->language,
             'created_at' => $job->created_at->toIso8601String(),
         ]);
 
