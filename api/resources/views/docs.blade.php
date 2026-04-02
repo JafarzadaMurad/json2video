@@ -1838,7 +1838,8 @@
 
             <h4>Request Body</h4>
             <pre>{
-  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/voiceover.mp3"</span>
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/voiceover.mp3"</span>,
+  <span class="color-key">"language"</span>: <span class="color-str">"az"</span>
 }</pre>
 
             <table>
@@ -1854,7 +1855,18 @@
                     <td><span class="required">Yes</span></td>
                     <td>URL to audio (MP3, WAV, AAC) or video (MP4, WebM, MOV) file</td>
                 </tr>
+                <tr>
+                    <td>language</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td></td>
+                    <td>Language code (<code class="td-code">az</code>, <code class="td-code">en</code>, <code
+                            class="td-code">tr</code>, <code class="td-code">ru</code>…). If omitted, auto-detected.
+                    </td>
+                </tr>
             </table>
+
+            <div class="alert alert-info">💡 Specifying <code class="td-code">language</code> improves accuracy. Omit it
+                for auto-detection (99 languages supported).</div>
 
             <h4>Response — <span class="status status-202">202 Accepted</span></h4>
             <pre>{
