@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\RenderJob;
+use App\Models\TranscribeJob;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,21 @@ class DashboardController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentJobs', 'jobsPerDay', 'planBreakdown'));
+        // Transcribe stats
+        $transcribeStats = [
+            'total' => TranscribeJob::count(),
+            'done' => TranscribeJob::where('status', 'done')->count(),
+            'processing' => TranscribeJob::where('status', 'processing')->count(),
+            'queued' => TranscribeJob::where('status', 'queued')->count(),
+            'failed' => TranscribeJob::where('status', 'failed')->count(),
+        ];
+
+        // Recent transcribe jobs
+        $recentTranscribeJobs = TranscribeJob::with('user')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'recentJobs', 'jobsPerDay', 'planBreakdown', 'transcribeStats', 'recentTranscribeJobs'));
     }
 }

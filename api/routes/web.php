@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\PlanRequestController;
 use App\Http\Controllers\Admin\RenderJobController;
+use App\Http\Controllers\Admin\TranscribeJobController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserDashboardController;
@@ -79,6 +80,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/jobs', [RenderJobController::class, 'index'])->name('admin.jobs');
         Route::get('/jobs/{id}', [RenderJobController::class, 'show'])->name('admin.jobs.show');
         Route::delete('/jobs/{id}', [RenderJobController::class, 'destroy'])->name('admin.jobs.delete');
+
+        // Transcribe Jobs
+        Route::get('/transcribe-jobs', [TranscribeJobController::class, 'index'])->name('admin.transcribe-jobs');
+        Route::get('/transcribe-jobs/{id}', [TranscribeJobController::class, 'show'])->name('admin.transcribe-jobs.show');
+        Route::delete('/transcribe-jobs/{id}', [TranscribeJobController::class, 'destroy'])->name('admin.transcribe-jobs.delete');
 
         // Templates
         Route::get('/templates', [TemplateController::class, 'index'])->name('admin.templates');

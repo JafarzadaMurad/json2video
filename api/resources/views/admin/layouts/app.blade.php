@@ -670,6 +670,9 @@
             <a href="/admin/jobs" class="{{ request()->is('admin/jobs*') ? 'active' : '' }}">
                 <span class="icon">🎬</span> Render Jobs
             </a>
+            <a href="/admin/transcribe-jobs" class="{{ request()->is('admin/transcribe-jobs*') ? 'active' : '' }}">
+                <span class="icon">🎤</span> Transcribe Jobs
+            </a>
             <a href="/admin/templates" class="{{ request()->is('admin/templates*') ? 'active' : '' }}">
                 <span class="icon">📋</span> Templates
             </a>
