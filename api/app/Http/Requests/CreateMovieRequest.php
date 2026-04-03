@@ -105,6 +105,18 @@ class CreateMovieRequest extends FormRequest
             'scenes.*.elements.*.subtitles.highlight-color' => 'sometimes|string|max:20',
             'scenes.*.elements.*.subtitles.animation' => 'sometimes',
             'scenes.*.elements.*.subtitles.position-y' => 'sometimes|string|in:top,center,bottom',
+
+            // Visual Effects (image/video elements)
+            'scenes.*.elements.*.effect' => 'sometimes|array',
+            'scenes.*.elements.*.effect.type' => 'sometimes|string|in:zoom-in,zoom-out,pan,ken-burns',
+            'scenes.*.elements.*.effect.duration' => 'sometimes|numeric|min:0.1',
+            'scenes.*.elements.*.effect.easing' => 'sometimes|string|in:linear,ease-in,ease-out,ease-in-out',
+            'scenes.*.elements.*.effect.start-scale' => 'sometimes|numeric|min:0.5|max:3',
+            'scenes.*.elements.*.effect.end-scale' => 'sometimes|numeric|min:0.5|max:3',
+            'scenes.*.elements.*.effect.direction' => 'sometimes|string|in:in,out,left,right,up,down',
+            'scenes.*.elements.*.effect.intensity' => 'sometimes|numeric|min:0.01|max:0.5',
+            'scenes.*.elements.*.effect.x' => 'sometimes|string|in:left,center,right',
+            'scenes.*.elements.*.effect.y' => 'sometimes|string|in:top,center,bottom',
         ];
     }
 

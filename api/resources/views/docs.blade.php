@@ -556,6 +556,11 @@
         </div>
 
         <div class="nav-group">
+            <div class="nav-group-title">🎬 Visual Effects</div>
+            <a href="#effects" class="nav-link">Zoom / Pan / Ken Burns</a>
+        </div>
+
+        <div class="nav-group">
             <div class="nav-group-title">Transcription</div>
             <a href="#create-transcribe" class="nav-link"><span class="method method-post">POST</span> Transcribe</a>
             <a href="#get-transcribe" class="nav-link"><span class="method method-get">GET</span> Get Status</a>
@@ -1294,6 +1299,120 @@
             <div class="alert alert-warn">⚠️ Auto-SRT adds processing time (~30–60s per minute of audio on CPU). For
                 pre-made subtitles, use the <a href="#el-subtitles" style="color:var(--orange)">Subtitles element</a>
                 with an SRT file instead.</div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- VISUAL EFFECTS -->
+        <section class="section" id="effects">
+            <h2>🎬 Visual Effects</h2>
+            <p>Apply continuous visual effects to <strong>image</strong> and <strong>video</strong> elements. Effects
+                run over the element's duration and can be combined with animations.</p>
+
+            <h4>Effect Properties</h4>
+            <table>
+                <tr>
+                    <th>Property</th>
+                    <th>Type</th>
+                    <th>Default</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>type</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>—</td>
+                    <td><strong>Required.</strong> <code class="td-code">zoom-in</code>, <code
+                            class="td-code">zoom-out</code>, <code class="td-code">pan</code>, <code
+                            class="td-code">ken-burns</code></td>
+                </tr>
+                <tr>
+                    <td>duration</td>
+                    <td><span class="tag tag-number">number</span></td>
+                    <td>element duration</td>
+                    <td>Effect duration in seconds. If omitted, spans the entire element.</td>
+                </tr>
+                <tr>
+                    <td>easing</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>ease-in-out</td>
+                    <td><code class="td-code">linear</code>, <code class="td-code">ease-in</code>, <code
+                            class="td-code">ease-out</code>, <code class="td-code">ease-in-out</code></td>
+                </tr>
+                <tr>
+                    <td>start-scale</td>
+                    <td><span class="tag tag-number">number</span></td>
+                    <td>1.0</td>
+                    <td>Starting zoom scale (zoom/ken-burns). 1.0 = original size.</td>
+                </tr>
+                <tr>
+                    <td>end-scale</td>
+                    <td><span class="tag tag-number">number</span></td>
+                    <td>1.3</td>
+                    <td>Ending zoom scale (zoom/ken-burns)</td>
+                </tr>
+                <tr>
+                    <td>direction</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>depends</td>
+                    <td>Pan: <code class="td-code">left</code>/<code class="td-code">right</code>/<code
+                            class="td-code">up</code>/<code class="td-code">down</code>. Ken Burns: <code
+                            class="td-code">in</code>/<code class="td-code">out</code></td>
+                </tr>
+                <tr>
+                    <td>intensity</td>
+                    <td><span class="tag tag-number">number</span></td>
+                    <td>0.15</td>
+                    <td>Pan distance as ratio (0.01–0.5). Higher = more movement.</td>
+                </tr>
+                <tr>
+                    <td>x</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>center</td>
+                    <td>Ken Burns anchor: <code class="td-code">left</code>, <code class="td-code">center</code>, <code
+                            class="td-code">right</code></td>
+                </tr>
+                <tr>
+                    <td>y</td>
+                    <td><span class="tag tag-string">string</span></td>
+                    <td>center</td>
+                    <td>Ken Burns anchor: <code class="td-code">top</code>, <code class="td-code">center</code>, <code
+                            class="td-code">bottom</code></td>
+                </tr>
+            </table>
+
+            <h4>Examples</h4>
+
+            <h5>Zoom In</h5>
+            <pre>{
+  <span class="color-key">"type"</span>: <span class="color-str">"image"</span>,
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/photo.jpg"</span>,
+  <span class="color-key">"duration"</span>: <span class="color-num">5</span>,
+  <span class="color-key">"effect"</span>: { <span class="color-key">"type"</span>: <span class="color-str">"zoom-in"</span>, <span class="color-key">"start-scale"</span>: <span class="color-num">1.0</span>, <span class="color-key">"end-scale"</span>: <span class="color-num">1.3</span> }
+}</pre>
+
+            <h5>Pan Left</h5>
+            <pre>{
+  <span class="color-key">"type"</span>: <span class="color-str">"video"</span>,
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/clip.mp4"</span>,
+  <span class="color-key">"effect"</span>: { <span class="color-key">"type"</span>: <span class="color-str">"pan"</span>, <span class="color-key">"direction"</span>: <span class="color-str">"left"</span>, <span class="color-key">"intensity"</span>: <span class="color-num">0.2</span> }
+}</pre>
+
+            <h5>Ken Burns (cinematic)</h5>
+            <pre>{
+  <span class="color-key">"type"</span>: <span class="color-str">"image"</span>,
+  <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/landscape.jpg"</span>,
+  <span class="color-key">"duration"</span>: <span class="color-num">8</span>,
+  <span class="color-key">"effect"</span>: {
+    <span class="color-key">"type"</span>: <span class="color-str">"ken-burns"</span>,
+    <span class="color-key">"direction"</span>: <span class="color-str">"in"</span>,
+    <span class="color-key">"x"</span>: <span class="color-str">"left"</span>,
+    <span class="color-key">"y"</span>: <span class="color-str">"top"</span>,
+    <span class="color-key">"easing"</span>: <span class="color-str">"ease-in-out"</span>
+  }
+}</pre>
+
+            <div class="alert alert-info">💡 Effects and animations can be combined. Effects control continuous
+                movement; animations control enter/exit.</div>
         </section>
 
         <!-- SUBTITLES -->

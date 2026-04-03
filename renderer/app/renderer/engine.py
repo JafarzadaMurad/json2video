@@ -28,6 +28,7 @@ from app.elements.subtitles import SubtitlesElement
 from app.utils.downloader import cleanup_temp, download_asset
 from app.utils.progress_reporter import ProgressReporter
 from app.services.transcriber import transcribe_from_video, transcribe_from_audio
+from app.effects.visual import apply_effect
 
 logger = logging.getLogger('engine')
 
@@ -332,6 +333,12 @@ class RenderEngine:
                     animation = elem_data.get('animation')
                     if animation and elem_type not in ('audio',) and not isinstance(result, list):
                         clip = self._apply_animation(clip, animation, duration)
+
+                    # Apply visual effect if specified (image/video only)
+                    effect = elem_data.get('effect')
+                    if effect and elem_type in ('image', 'video') and not isinstance(result, list):
+                        elem_dur = elem_data.get('duration', duration)
+                        clip = apply_effect(clip, effect, elem_dur)
 
                     if elem_type == 'audio':
                         audio_clips.append(clip)
