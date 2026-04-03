@@ -1039,6 +1039,22 @@
                     <td><span class="required">Yes</span></td>
                     <td>Image URL (JPEG, PNG, WebP)</td>
                 </tr>
+                <tr>
+                    <td>effect</td>
+                    <td><span class="tag tag-array">object</span></td>
+                    <td></td>
+                    <td>Visual effect: <code class="td-code">zoom-in</code>, <code class="td-code">zoom-out</code>,
+                        <code class="td-code">pan</code>, <code class="td-code">ken-burns</code>. See <a href="#effects"
+                            style="color:var(--accent2)">Visual Effects</a></td>
+                </tr>
+                <tr>
+                    <td>animation</td>
+                    <td><span class="tag tag-array">object</span></td>
+                    <td></td>
+                    <td>Enter/exit animation: <code class="td-code">fade-in</code>, <code
+                            class="td-code">fade-out</code>, <code class="td-code">slide-in-*</code>, <code
+                            class="td-code">zoom-in</code>, <code class="td-code">bounce</code></td>
+                </tr>
             </table>
             <div class="alert alert-info">If width/height omitted, image fills the entire canvas.</div>
         </section>
@@ -1104,6 +1120,22 @@
                     <td>false</td>
                     <td>Auto-generate subtitles from video audio using AI (Whisper). See <a href="#auto-srt"
                             style="color:var(--accent2)">Auto-SRT</a></td>
+                </tr>
+                <tr>
+                    <td>effect</td>
+                    <td><span class="tag tag-array">object</span></td>
+                    <td>—</td>
+                    <td>Visual effect: <code class="td-code">zoom-in</code>, <code class="td-code">zoom-out</code>,
+                        <code class="td-code">pan</code>, <code class="td-code">ken-burns</code>. See <a href="#effects"
+                            style="color:var(--accent2)">Visual Effects</a></td>
+                </tr>
+                <tr>
+                    <td>animation</td>
+                    <td><span class="tag tag-array">object</span></td>
+                    <td>—</td>
+                    <td>Enter/exit animation: <code class="td-code">fade-in</code>, <code
+                            class="td-code">fade-out</code>, <code class="td-code">slide-in-*</code>, <code
+                            class="td-code">zoom-in</code>, <code class="td-code">bounce</code></td>
                 </tr>
             </table>
         </section>
