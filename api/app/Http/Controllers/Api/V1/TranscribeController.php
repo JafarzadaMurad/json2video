@@ -8,6 +8,7 @@ use App\Models\TranscribeJob;
 use App\Services\TranscribeDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class TranscribeController extends Controller
 {
@@ -18,14 +19,30 @@ class TranscribeController extends Controller
 
     /**
      * POST /api/v1/transcribe — Create a new transcription job
+     * Accepts either JSON with "src" URL or multipart/form-data with "file" upload.
      */
     public function store(CreateTranscribeRequest $request): JsonResponse
     {
         $user = $request->user();
         $validated = $request->validated();
 
+        // Determine source: uploaded file or URL
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension();
+            $filename = uniqid('transcribe_') . '.' . $extension;
+
+            // Store in public storage for worker to download via URL
+            $path = $file->storeAs('uploads/transcribe', $filename, 'public');
+            $srcUrl = url('storage/' . $path);
+            $uploadedPath = storage_path('app/public/' . $path);
+        } else {
+            $srcUrl = $validated['src'];
+            $uploadedPath = null;
+        }
+
         // Detect if source is video or audio based on extension
-        $extension = strtolower(pathinfo(parse_url($validated['src'], PHP_URL_PATH), PATHINFO_EXTENSION));
+        $extension = strtolower(pathinfo(parse_url($srcUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
         $videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
         $srcType = in_array($extension, $videoExtensions) ? 'video' : 'audio';
 
@@ -33,9 +50,10 @@ class TranscribeController extends Controller
         $job = TranscribeJob::create([
             'user_id' => $user->id,
             'status' => TranscribeJob::STATUS_QUEUED,
-            'src_url' => $validated['src'],
+            'src_url' => $srcUrl,
             'src_type' => $srcType,
             'language' => $validated['language'] ?? null,
+            'uploaded_path' => $uploadedPath,
         ]);
 
         // Dispatch to Redis queue for Python worker

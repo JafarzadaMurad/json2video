@@ -1980,18 +1980,25 @@
         <!-- TRANSCRIPTION -->
         <section class="section" id="create-transcribe">
             <h2>Transcription (Audio/Video → SRT)</h2>
-            <p>Generate SRT subtitle files from audio or video using AI (OpenAI Whisper). Files expire after 1 hour.</p>
+            <p>Generate SRT subtitle files from audio or video using AI (OpenAI Whisper). Files expire after 1 hour.
+                Accepts <strong>URL</strong> or <strong>file upload</strong>.</p>
 
             <div class="endpoint-header">
                 <span class="method method-post">POST</span>
                 <span class="path">/api/v1/transcribe</span>
             </div>
 
-            <h4>Request Body</h4>
+            <h4>Option 1: JSON (URL)</h4>
             <pre>{
   <span class="color-key">"src"</span>: <span class="color-str">"https://example.com/voiceover.mp3"</span>,
   <span class="color-key">"language"</span>: <span class="color-str">"az"</span>
 }</pre>
+
+            <h4>Option 2: File Upload (multipart/form-data)</h4>
+            <pre><span class="color-key">curl</span> -X POST /api/v1/transcribe \
+  -H "X-API-Key: YOUR_KEY" \
+  -F "<span class="color-key">file</span>=@/path/to/audio.mp3" \
+  -F "<span class="color-key">language</span>=az"</pre>
 
             <table>
                 <tr>
@@ -2003,8 +2010,14 @@
                 <tr>
                     <td>src</td>
                     <td><span class="tag tag-string">string</span></td>
-                    <td><span class="required">Yes</span></td>
-                    <td>URL to audio (MP3, WAV, AAC) or video (MP4, WebM, MOV) file</td>
+                    <td>*</td>
+                    <td>URL to audio/video file. <strong>Required if <code class="td-code">file</code> not provided.</strong></td>
+                </tr>
+                <tr>
+                    <td>file</td>
+                    <td><span class="tag tag-string">file</span></td>
+                    <td>*</td>
+                    <td>Upload audio/video file (max 500 MB). <strong>Required if <code class="td-code">src</code> not provided.</strong></td>
                 </tr>
                 <tr>
                     <td>language</td>
@@ -2016,8 +2029,7 @@
                 </tr>
             </table>
 
-            <div class="alert alert-info">💡 Specifying <code class="td-code">language</code> improves accuracy. Omit it
-                for auto-detection (99 languages supported).</div>
+            <div class="alert alert-info">💡 Supported formats: MP3, WAV, M4A, AAC, OGG, FLAC, MP4, WebM, MOV, AVI, MKV. Max file size: 500 MB.</div>
 
             <h4>Response — <span class="status status-202">202 Accepted</span></h4>
             <pre>{

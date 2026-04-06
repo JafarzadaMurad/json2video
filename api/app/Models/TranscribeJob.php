@@ -22,6 +22,7 @@ class TranscribeJob extends Model
         'segments',
         'srt_path',
         'srt_url',
+        'uploaded_path',
         'error_message',
         'worker_id',
         'expires_at',
