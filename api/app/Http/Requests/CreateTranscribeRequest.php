@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class CreateTranscribeRequest extends FormRequest
 {
@@ -29,5 +31,17 @@ class CreateTranscribeRequest extends FormRequest
             'file.mimes' => 'File must be: mp3, wav, m4a, aac, ogg, flac, mp4, webm, mov, avi, mkv.',
             'file.max' => 'File size must not exceed 500 MB.',
         ];
+    }
+
+    /**
+     * Always return JSON on validation failure (even for multipart/form-data).
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        throw new HttpResponseException(response()->json([
+            'error' => 'Validation failed',
+            'error_code' => 'VALIDATION_ERROR',
+            'details' => $validator->errors(),
+        ], 422));
     }
 }
