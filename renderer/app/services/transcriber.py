@@ -78,7 +78,7 @@ def extract_audio(input_path: str, output_path: str) -> str:
 
 
 def _should_split_block(current_block: list, next_word: dict,
-                        max_duration: float = 4.0,
+                        max_words: int = 6, max_duration: float = 4.0,
                         pause_threshold: float = 0.6) -> bool:
     """Decide whether to split the current subtitle block before adding next_word."""
     if not current_block:
@@ -88,6 +88,10 @@ def _should_split_block(current_block: list, next_word: dict,
     block_duration = next_word['end'] - current_block[0]['start']
     pause_gap = next_word['start'] - current_block[-1]['end']
     last_text = current_block[-1]['text']
+
+    # Hard word limit — keep subtitles readable
+    if word_count >= max_words:
+        return True
 
     # Max duration — subtitle shouldn't stay on screen too long
     if block_duration >= max_duration:
