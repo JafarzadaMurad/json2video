@@ -114,7 +114,7 @@ def _should_split_block(current_block: list, next_word: dict,
 
 def transcribe_to_srt(audio_path: str, output_path: str = None,
                       pause_threshold: float = 0.6,
-                      max_block_duration: float = 4.0,
+                      max_block_duration: float = 2.0,
                       language: str = None) -> str:
     """
     Transcribe an audio file to SRT format using Whisper.
