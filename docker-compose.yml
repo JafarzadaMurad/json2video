@@ -97,6 +97,7 @@ services:
       context: ./renderer
       dockerfile: Dockerfile
     volumes:
+      - ./renderer/app:/app/app
       - ./storage/renders:/app/storage/renders
       - ./videos:/app/media:ro
     environment:

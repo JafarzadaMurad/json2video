@@ -78,7 +78,7 @@ def extract_audio(input_path: str, output_path: str) -> str:
 
 
 def _should_split_block(current_block: list, next_word: dict,
-                        max_words: int = 12, max_duration: float = 4.0,
+                        max_duration: float = 4.0,
                         pause_threshold: float = 0.6) -> bool:
     """Decide whether to split the current subtitle block before adding next_word."""
     if not current_block:
@@ -89,9 +89,7 @@ def _should_split_block(current_block: list, next_word: dict,
     pause_gap = next_word['start'] - current_block[-1]['end']
     last_text = current_block[-1]['text']
 
-    # Hard limits — always split
-    if word_count >= max_words:
-        return True
+    # Max duration — subtitle shouldn't stay on screen too long
     if block_duration >= max_duration:
         return True
 
@@ -111,7 +109,6 @@ def _should_split_block(current_block: list, next_word: dict,
 
 
 def transcribe_to_srt(audio_path: str, output_path: str = None,
-                      max_words_per_block: int = 12,
                       pause_threshold: float = 0.6,
                       max_block_duration: float = 4.0,
                       language: str = None) -> str:
@@ -122,7 +119,6 @@ def transcribe_to_srt(audio_path: str, output_path: str = None,
     Args:
         audio_path: Path to the audio file (WAV, MP3, etc.)
         output_path: Optional output SRT file path.
-        max_words_per_block: Hard cap on words per subtitle block (default: 12)
         pause_threshold: Seconds of silence to trigger a split (default: 0.6)
         max_block_duration: Max seconds a single subtitle stays on screen (default: 4.0)
         language: Optional language code (e.g. 'az', 'en', 'tr'). None = auto-detect.
@@ -169,7 +165,6 @@ def transcribe_to_srt(audio_path: str, output_path: str = None,
 
     for word in all_words:
         if _should_split_block(current_block, word,
-                               max_words=max_words_per_block,
                                max_duration=max_block_duration,
                                pause_threshold=pause_threshold):
             blocks.append({
