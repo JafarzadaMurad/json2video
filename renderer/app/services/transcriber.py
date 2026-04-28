@@ -77,17 +77,54 @@ def extract_audio(input_path: str, output_path: str) -> str:
         raise RuntimeError('Audio extraction timed out (>120s)')
 
 
+def _should_split_block(current_block: list, next_word: dict,
+                        max_words: int = 12, max_duration: float = 4.0,
+                        pause_threshold: float = 0.6) -> bool:
+    """Decide whether to split the current subtitle block before adding next_word."""
+    if not current_block:
+        return False
+
+    word_count = len(current_block)
+    block_duration = next_word['end'] - current_block[0]['start']
+    pause_gap = next_word['start'] - current_block[-1]['end']
+    last_text = current_block[-1]['text']
+
+    # Hard limits — always split
+    if word_count >= max_words:
+        return True
+    if block_duration >= max_duration:
+        return True
+
+    # Pause in speech — split if block already has content
+    if pause_gap >= pause_threshold and word_count >= 1:
+        return True
+
+    # Sentence-ending punctuation — split after . ! ? …
+    if word_count >= 2 and last_text and last_text[-1] in '.!?…':
+        return True
+
+    # Clause-boundary punctuation — split after , ; : only if block is long enough
+    if word_count >= 4 and last_text and last_text[-1] in ',;:':
+        return True
+
+    return False
+
+
 def transcribe_to_srt(audio_path: str, output_path: str = None,
-                      max_words_per_block: int = 7,
+                      max_words_per_block: int = 12,
+                      pause_threshold: float = 0.6,
+                      max_block_duration: float = 4.0,
                       language: str = None) -> str:
     """
     Transcribe an audio file to SRT format using Whisper.
-    Uses word-level timestamps to create short, readable subtitle blocks.
+    Uses word-level timestamps, pauses and punctuation to create natural subtitle blocks.
 
     Args:
         audio_path: Path to the audio file (WAV, MP3, etc.)
         output_path: Optional output SRT file path.
-        max_words_per_block: Maximum words per subtitle block (default: 7)
+        max_words_per_block: Hard cap on words per subtitle block (default: 12)
+        pause_threshold: Seconds of silence to trigger a split (default: 0.6)
+        max_block_duration: Max seconds a single subtitle stays on screen (default: 4.0)
         language: Optional language code (e.g. 'az', 'en', 'tr'). None = auto-detect.
 
     Returns:
@@ -126,20 +163,23 @@ def transcribe_to_srt(audio_path: str, output_path: str = None,
     if not all_words:
         raise ValueError('No speech detected in the audio file. Cannot generate subtitles.')
 
-    # Group words into short blocks (max N words per subtitle)
+    # Group words into natural blocks using pauses, punctuation and limits
     blocks = []
     current_block = []
 
     for word in all_words:
-        current_block.append(word)
-
-        if len(current_block) >= max_words_per_block:
+        if _should_split_block(current_block, word,
+                               max_words=max_words_per_block,
+                               max_duration=max_block_duration,
+                               pause_threshold=pause_threshold):
             blocks.append({
                 'start': current_block[0]['start'],
                 'end': current_block[-1]['end'],
                 'text': ' '.join(w['text'] for w in current_block),
             })
             current_block = []
+
+        current_block.append(word)
 
     # Don't forget the last block
     if current_block:
