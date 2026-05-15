@@ -20,6 +20,11 @@ class RateLimiter
             return $next($request);
         }
 
+        // GET requests (status polling etc.) are not rate-limited
+        if ($request->isMethod('GET')) {
+            return $next($request);
+        }
+
         $plan = $user->plan;
         $maxPerMinute = $plan?->rate_limit_per_minute ?? 10;
 
